@@ -21,7 +21,7 @@ var query =
 var apiList = [
   "https://api.crom.avn.sh/graphql",
   "https://zh.xjo.ch/crom/graphql",
-];
+]
 
 /**
  * @typedef CromPage
@@ -65,13 +65,9 @@ var apiList = [
  * each found translation.
  */
 export function cromLookup(currentBranch, branches, fullname, addLink) {
-  executeQuery(
-    normaliseUrl(currentBranch.url + fullname),
-    0,
-    function (response) {
-      parseTranslations(response, currentBranch, branches, addLink);
-    }
-  );
+  executeQuery(normaliseUrl(currentBranch.url + fullname), 0, function (response) {
+    parseTranslations(response, currentBranch, branches, addLink);
+  });
 }
 
 /**

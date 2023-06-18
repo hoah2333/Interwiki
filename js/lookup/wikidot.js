@@ -111,15 +111,9 @@ function addTranslationForBranch(
  * @param {findPagesCallback} callback - Will be called with the array of
  * matching fullnames.
  */
-function findPagesInSiteStartingWith(
-  currentBranchUrl,
-  siteId,
-  fullname,
-  callback
-) {
+function findPagesInSiteStartingWith(currentBranchUrl, siteId, fullname, callback) {
   var query = "&s=" + siteId + "&q=" + fullname;
-  var url =
-    currentBranchUrl + "quickmodule.php?module=PageLookupQModule" + query;
+  var url = currentBranchUrl + "quickmodule.php?module=PageLookupQModule" + query;
   var request = new XMLHttpRequest();
   request.open("GET", url, true);
   request.addEventListener("load", function () {

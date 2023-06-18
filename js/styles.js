@@ -6,8 +6,8 @@ import { getQueryString } from "./interwiki";
  *
  * @param {String} siteUrl - The base URL of the interwiki's configured
  * site.
- * @param {Function} resize - A function to call to resize the interwiki
- * iframe after adding new CSS.
+ * @param {String} type - The type of interwiki, for potentially
+ * different styles of interwiki in the same page.
  */
 export function createRequestStyleChange(siteUrl, type) {
   /**
@@ -56,18 +56,22 @@ function addInternalStyle(priority, css, override) {
     // Override the style of a pre-existing styling element
     if (overrideElement) {
       console.log(
-        "Interwiki: style at priority " + priority + " is being overrided."
+        "Interwiki: style at priority " + 
+        priority +
+        " is being overrided."
       );
       overrideElement.innerText = css;
       return;
     }
   }
+
   // Create a new style elements for the CSS
   var style = document.createElement("style");
   style.innerText = css;
 
   // Insert the style into the appropriate position in the head
   insertStyle(priority, style);
+  
 }
 
 /**
@@ -79,25 +83,25 @@ function addInternalStyle(priority, css, override) {
  * @param {String} url - The URL of the CSS stylesheet.
  * @param {Boolean} override - Whether to remove all previous styling or not.
  */
-export function addExternalStyle(priority, url) {
+export function addExternalStyle(priority, url, override) {
   // Check that the incoming link doesn't duplicate an existing style
   var linkElements = Array.prototype.slice.call(
     document.head.querySelectorAll("link.custom-style")
   );
   if (linkElements.some(duplicatesStyle(priority, url))) return;
-
+  
   if (override) {
     var overrideElement = linkElements.find(duplicatesPriority(priority));
     // Override the link of a pre-existing link element
     if (overrideElement) {
       console.log(
         "Interwiki: stylesheet " +
-          overrideElement.href +
-          " is overrided by " +
-          url +
-          " at priority " +
-          priority +
-          "."
+        overrideElement.href +
+        " is overrided by " +
+        url + 
+        " at priority " + 
+        priority +
+        "."
       );
       overrideElement.href = url;
       return;
@@ -214,16 +218,16 @@ function duplicatesStyle(priority, value) {
  *
  * @param {Number} priority
  */
-function duplicatesPriority(priority) {
-    /**
-     * @param {HTMLLinkElement | HTMLStyleElement} styleElement
-     * @returns {Boolean}
-     */
-    var isDuplicate = function (styleElement) {
-      return Number(styleElement.getAttribute("data-priority")) === priority;
-    };
-    return isDuplicate;
-  }
+ function duplicatesPriority(priority) {
+  /**
+   * @param {HTMLLinkElement | HTMLStyleElement} styleElement
+   * @returns {Boolean}
+   */
+  var isDuplicate = function (styleElement) {
+    return Number(styleElement.getAttribute("data-priority")) === priority;
+  };
+  return isDuplicate;
+}
 
 /**
  * Constructs a URL pointing to the expected location of a CSS stylesheet.
