@@ -1,4 +1,7 @@
 :root {
+    --ui-wght: 400;
+    --ui-hvr-wght: 400;
+
     --white-monochrome: 237, 233, 233;
     --black-monochrome: 25, 20, 16;
     --bright-accent: 140, 136, 126;
