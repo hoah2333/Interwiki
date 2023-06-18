@@ -104,13 +104,6 @@ export var scpBranches = {
     id: "1398197",
     category: "",
   },
-  "zh-tr": {
-    name: "繁體中文",
-    head: "其他語言",
-    url: "https://scp-zh-tr.wikidot.com/",
-    id: "3947998",
-    category: "",
-  },
   vn: {
     name: "Tiếng Việt",
     head: "Ngôn ngữ",

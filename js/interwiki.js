@@ -4,6 +4,7 @@ import { addExternalStyle, createRequestStyleChange } from "./styles";
 
 import { scpBranches } from "./branches-info-scp";
 import { wlBranches } from "./branches-info-wl";
+import { brBranches } from "./branches-info-br";
 
 import { ResizeObserver } from "@juggle/resize-observer";
 
@@ -11,12 +12,13 @@ addEventListener("DOMContentLoaded", function () {
   var community = getQueryString(location.search, "community");
   var pagename = getQueryString(location.search, "pagename");
   var lang = getQueryString(location.search, "lang");
+  var type = getQueryString(location.search, "type");
   var preventWikidotBaseStyle = getQueryString(
     location.search,
     "preventWikidotBaseStyle"
   );
 
-  createInterwiki(community, pagename, lang, preventWikidotBaseStyle);
+  createInterwiki(community, pagename, lang, type, preventWikidotBaseStyle);
 
   // Expose identity for styleFrame
   window.isInterwikiFrame = true;
@@ -80,10 +82,12 @@ function pullStyles() {
  * Main procedure for the interwiki. Prepare contextual data, apply CSS
  * styling, and add links to translations.
  *
- * @param {"scp" | "wl"} community - The community of the interwiki.
+ * @param {"scp" | "wl" | "br"} community - The community of the interwiki.
  * @param {String} pagename - The Wikidot fullname of the current page.
  * @param {String} currentBranchLang - The language code of the current branch
  * of the given community.
+ * @param {String} type - The type of the interwiki, for potentially
+ * different styles of interwiki in the same page.
  * @param {String} preventWikidotBaseStyle - Whether to prevent the
  * addition of Wikidot's base style to the interwiki. If any value other
  * than the string "true", the style will be added with priority -1.
@@ -92,12 +96,16 @@ export function createInterwiki(
   community,
   pagename,
   currentBranchLang,
+  type,
   preventWikidotBaseStyle
 ) {
   pagename = pagename.replace(/^_default:/, "");
+  pagename = pagename.replace(/[^\w\-:]+/g, "-").toLowerCase();
+  pagename = pagename.replace(/^_/, "#").replace(/_/g, "-").replace(/#/, "_");
+  pagename = pagename.replace(/^-+|-+$/g, "");
 
   // Get the list of branches for the given community
-  var branches = { wl: wlBranches, scp: scpBranches }[community] || {};
+  var branches = { wl: wlBranches, scp: scpBranches, br: brBranches }[community] || {};
 
   // Get the config for the current branch, if configured
   var currentBranch = branches[currentBranchLang] || {};
@@ -113,13 +121,17 @@ export function createInterwiki(
 
   // Construct the function that will be called internally and by
   // styleFrames to request style changes
-  window.requestStyleChange = createRequestStyleChange(currentBranch.url || "");
+  window.requestStyleChange = createRequestStyleChange(
+    currentBranch.url || "",
+    type || "default"
+  );
 
   // Add Wikidot's base style unless instructed otherwise
   if (preventWikidotBaseStyle !== "true") {
     addExternalStyle(
       -1,
-      "//d3g0gp89917ko0.cloudfront.net/v--3e3a6f7dbcc9/common--theme/base/css/style.css"
+      "//d3g0gp89917ko0.cloudfront.net/v--3e3a6f7dbcc9/common--theme/base/css/style.css",
+      false
     );
   }
 

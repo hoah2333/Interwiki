@@ -98,10 +98,7 @@ function addTranslationLink(pageUrl, branchName, branchLang, isOriginal) {
 
   // Create the bullet point image
   var bullet = document.createElement("img");
-  bullet.setAttribute(
-    "src",
-    "//scp-wiki.wdfiles.com/local--files/nav:side/default.png"
-  );
+  bullet.setAttribute("src", "//sigma9.scpwikicn.com/cn/img/default.png");
   bullet.setAttribute("alt", "default.png");
   bullet.classList.add("image");
   newMenuItem.appendChild(bullet);

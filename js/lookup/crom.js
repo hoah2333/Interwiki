@@ -16,6 +16,13 @@ var query =
   } \
 ";
 
+// GraphQL endpoints for Crom API fallback
+// Generally used for proxying
+var apiList = [
+  "https://api.crom.avn.sh/graphql",
+  "https://zh.xjo.ch/crom/graphql",
+];
+
 /**
  * @typedef CromPage
  * @type {Object}
@@ -47,7 +54,7 @@ var query =
 
 /**
  * Searches for pages whose fullname matches the given string in the given
- * set of Wikidot sites using Wikidot's PageLookupQModule.
+ * set of Wikidot sites using Crom query.
  *
  * @param {Branch} currentBranch - Configuration for the current branch.
  * @param {Object.<string, Branch>} branches - The branches configuration
@@ -58,9 +65,13 @@ var query =
  * each found translation.
  */
 export function cromLookup(currentBranch, branches, fullname, addLink) {
-  executeQuery(normaliseUrl(currentBranch.url + fullname), function (response) {
-    parseTranslations(response, currentBranch, branches, addLink);
-  });
+  executeQuery(
+    normaliseUrl(currentBranch.url + fullname),
+    0,
+    function (response) {
+      parseTranslations(response, currentBranch, branches, addLink);
+    }
+  );
 }
 
 /**
@@ -133,11 +144,12 @@ function parseTranslations(response, currentBranch, branches, addLink) {
  *
  * @param {String} url - The HTTP Wikidot URL of the page for which to look
  * up translations.
+ * @param {Number} endpointIndex - Retry index for Crom endpoints.
  * @param {Function} callback - Will be called with the response from Crom.
  */
-function executeQuery(url, callback) {
+function executeQuery(url, endpointIndex, callback) {
   var request = new XMLHttpRequest();
-  request.open("POST", "https://api.crom.avn.sh/graphql", true);
+  request.open("POST", apiList[endpointIndex], true);
   request.setRequestHeader("Content-Type", "application/json");
   request.addEventListener("readystatechange", function () {
     if (request.readyState === XMLHttpRequest.DONE) {
@@ -152,8 +164,12 @@ function executeQuery(url, callback) {
           throw new Error(request.status);
         }
       } catch (error) {
-        console.error("Interwiki: lookup failed for " + url);
-        console.error(error);
+        if (endpointIndex++ < apiList.length) {
+          executeQuery(url, endpointIndex, callback);
+        } else {
+          console.error("Interwiki: lookup failed for " + url);
+          console.error(error);
+        }
       }
     }
   });
