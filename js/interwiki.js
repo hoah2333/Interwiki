@@ -104,6 +104,9 @@ export function createInterwiki(
   pagename = pagename.replace(/^_/, "#").replace(/_/g, "-").replace(/#/, "_");
   pagename = pagename.replace(/^-+|-+$/g, "");
 
+  // Reverse replace the desolation canon URL
+  pagename = pagename.replace(/^desolation-/, "desolation:");
+
   // Get the list of branches for the given community
   var branches = { wl: wlBranches, scp: scpBranches, br: brBranches }[community] || {};
 
