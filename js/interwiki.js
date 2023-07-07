@@ -105,7 +105,15 @@ export function createInterwiki(
   pagename = pagename.replace(/^-+|-+$/g, "");
 
   // Reverse replace the desolation canon URL
-  pagename = pagename.replace(/^desolation-/, "desolation:");
+  var desolations = new Array(
+    "desolation-backrooms-guide"
+  );
+
+  for (var i = 0; i < desolations.length; i++) {
+    if (pagename != desolations[i]) {
+      pagename = pagename.replace(/^desolation-/, "desolation:");
+    }
+  }
 
   // Get the list of branches for the given community
   var branches = { wl: wlBranches, scp: scpBranches, br: brBranches }[community] || {};
