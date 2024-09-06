@@ -27,6 +27,13 @@ export var brBranches = {
     id: "4710749",
     category: "",
   },
+  id: {
+    name: "Bahasa Indonesia",
+    head: "Bahasa lain",
+    url: "http://id-backrooms-wiki.wikidot.com/",
+    id: "4760096",
+    category: "",
+  },
   jp: {
     name: "日本語",
     head: "他言語版",
