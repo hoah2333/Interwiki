@@ -29,7 +29,7 @@ export var brBranches = {
   },
   id: {
     name: "Bahasa Indonesia",
-    head: "Bahasa lain",
+    head: "Bahasa lainnya",
     url: "http://id-backrooms-wiki.wikidot.com/",
     id: "4760096",
     category: "",
