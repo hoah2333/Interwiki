@@ -58,7 +58,7 @@ export var brBranches = {
   ru: {
     name: "Русский",
     head: "На других языках",
-    url: "https://www.backroomswiki.ru/",
+    url: "http://ru-backrooms-wiki.wikidot.com/",
     id: "4548260",
     category: "",
   },
