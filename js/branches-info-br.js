@@ -62,6 +62,13 @@ export var brBranches = {
     id: "4548260",
     category: "",
   },
+  th: {
+    name: "ภาษาไทย",
+    head: "ภาษาอื่นๆ",
+    url: "http://backrooms-th.wikidot.com/",
+    id: "4911723",
+    category: "",
+  },
   vn: {
     name: "Tiếng Việt",
     head: "Ngôn ngữ",
