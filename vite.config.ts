@@ -1,17 +1,20 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
+const src = resolve(import.meta.dirname, "src");
+
 export default defineConfig({
+  root: src,
   base: "./",
   build: {
-    outDir: "dist",
+    outDir: resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
       input: {
-        index: resolve(import.meta.dirname, "src/index.html"),
-        interwikiFrame: resolve(import.meta.dirname, "src/interwikiFrame.html"),
-        styleFrame: resolve(import.meta.dirname, "src/styleFrame.html"),
+        index: resolve(src, "index.html"),
+        interwikiFrame: resolve(src, "interwikiFrame.html"),
+        styleFrame: resolve(src, "styleFrame.html"),
       },
     },
   },

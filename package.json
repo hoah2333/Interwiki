@@ -2,10 +2,11 @@
   "name": "interwiki",
   "version": "0.0.0",
   "scripts": {
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "dev": "NODE_ENV=development node build.js",
-    "build": "node build.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "oxfmt --check . && oxlint",
+    "lint:fix": "oxfmt . && oxlint --fix"
   },
   "dependencies": {
     "@juggle/resize-observer": "^3.4.0",
