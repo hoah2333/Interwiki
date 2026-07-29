@@ -8,12 +8,16 @@
     "build": "node build.js"
   },
   "dependencies": {
-    "@juggle/resize-observer": "^3.4.0"
+    "@juggle/resize-observer": "^3.4.0",
+    "perfect-debounce": "^2.1.0",
+    "ts-pattern": "^5.9.0",
+    "valibot": "^1.4.2"
   },
   "devDependencies": {
     "oxfmt": "^0.61.0",
     "oxlint": "^1.76.0",
     "oxlint-tsgolint": "^7.0.2001",
+    "typescript": "^7.0.2",
     "vite": "^8.1.5"
   }
 }
