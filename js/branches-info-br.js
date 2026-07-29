@@ -27,11 +27,25 @@ export var brBranches = {
     id: "4710749",
     category: "",
   },
+  de: {
+    name: "Deutsch",
+    head: "In anderen Sprachen",
+    url: "http://de-backrooms-wiki.wikidot.com/",
+    id: "4956684",
+    category: "",
+  },
   id: {
     name: "Bahasa Indonesia",
     head: "Bahasa lainnya",
     url: "http://id-backrooms-wiki.wikidot.com/",
     id: "4760096",
+    category: "",
+  },
+  it: {
+    name: "Italiano",
+    head: "In altre lingue",
+    url: "https://it-backrooms-wiki.wikidot.com/",
+    id: "4763243",
     category: "",
   },
   jp: {
