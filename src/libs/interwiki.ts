@@ -1,72 +1,104 @@
+import { ResizeObserver } from "@juggle/resize-observer";
+import { variant, object, literal, string, picklist, optional, safeParse } from "valibot";
+import { branchesInfo } from "./branchesInfo";
 import { createResizeIframe } from "./createResizeIframe";
 import { addTranslations } from "./links";
 import { addExternalStyle, createRequestStyleChange } from "./styles";
 
-import { brBranches } from "./branches-info-br";
-import { scpBranches } from "./branches-info-scp";
-import { wlBranches } from "./branches-info-wl";
+import type { InferOutput } from "valibot";
 
-import { ResizeObserver } from "@juggle/resize-observer";
+/** Object keys as a non-empty tuple for `picklist`. */
+function langKeys<T extends Record<string, unknown>>(branches: T) {
+  return Object.keys(branches) as [keyof T & string, ...(keyof T & string)[]];
+}
 
-addEventListener("DOMContentLoaded", function () {
-  var community = getQueryString(location.search, "community");
-  var pagename = getQueryString(location.search, "pagename");
-  var lang = getQueryString(location.search, "lang");
-  var type = getQueryString(location.search, "type");
-  var preventWikidotBaseStyle = getQueryString(location.search, "preventWikidotBaseStyle") || "true";
+/**
+ * @param community - The community of the interwiki.
+ * @param pagename - The Wikidot fullname of the current page.
+ * @param currentBranchLang - The language code of the current branch of the given community.
+ * @param type - The type of the interwiki, for potentially different styles of interwiki in the same page.
+ * @param preventWikidotBaseStyle - Whether to prevent the addition of Wikidot's base style to the interwiki. If any
+ * value other than the string "true", the style will be added with priority -1.
+ */
+const interwikiParamsSchema = variant("community", [
+  object({
+    community: literal("scp"),
+    pagename: string(),
+    lang: picklist(langKeys(branchesInfo.scp)),
+    type: string(),
+    preventWikidotBaseStyle: optional(string(), "true"),
+  }),
+  object({
+    community: literal("wl"),
+    pagename: string(),
+    lang: picklist(langKeys(branchesInfo.wl)),
+    type: string(),
+    preventWikidotBaseStyle: optional(string(), "true"),
+  }),
+  object({
+    community: literal("br"),
+    pagename: string(),
+    lang: picklist(langKeys(branchesInfo.br)),
+    type: string(),
+    preventWikidotBaseStyle: optional(string(), "true"),
+  }),
+]);
 
-  createInterwiki(community, pagename, lang, type, preventWikidotBaseStyle);
+type InterwikiParams = InferOutput<typeof interwikiParamsSchema>;
+
+addEventListener("DOMContentLoaded", () => {
+  const community = getQueryString(location.search, "community");
+  const pagename = getQueryString(location.search, "pagename");
+  const lang = getQueryString(location.search, "lang");
+  const type = getQueryString(location.search, "type");
+  const preventWikidotBaseStyle = getQueryString(location.search, "preventWikidotBaseStyle") || "true";
+
+  const result = safeParse(interwikiParamsSchema, { community, pagename, lang, type, preventWikidotBaseStyle });
+
+  if (!result.success) {
+    console.error("Invalid interwiki params:", result.issues);
+    return;
+  }
+
+  createInterwiki(result.output);
 
   // Expose identity for styleFrame
   window.isInterwikiFrame = true;
 });
 
 /**
- * Retrieves the value of the query parameter in the URL with the
- * given key, if provided, otherwise returns the empty string.
+ * Retrieves the value of the query parameter in the URL with the given key, if provided, otherwise returns the empty
+ * string.
  *
- * @param {String} query - The URL query.
- * @param {String} name - The name of the parameter to get.
+ * @param query - The URL query.
+ * @param name - The name of the parameter to get.
  */
-export function getQueryString(query, name) {
-  // Get query parameters from the URL
-  if (query.indexOf("?") === 0) query = query.substring(1);
-  var parameters = query.split("&");
-  // Iterate parameters in reverse so later values override earlier ones
-  parameters.reverse();
-  // Find the parameter whose key is the given name
-  var matchingParameter = parameters.find(function (parameter) {
-    return parameter.indexOf(name + "=") === 0;
-  });
-  if (matchingParameter == null) return "";
-  // Return the part of the parameter following the "="
-  return decodeURIComponent(matchingParameter.substring(name.length + 1));
+export function getQueryString(query: string, name: string) {
+  const searchParams = new URLSearchParams(query);
+  const values = searchParams.getAll(name);
+  return values.length > 0 ? values[values.length - 1] : "";
 }
 
 /**
- * Finds styleFrames embedded in the parent page and pulls their style
- * change requests for the interwikiFrame to use.
+ * Finds styleFrames embedded in the parent page and pulls their style change requests for the interwikiFrame to use.
  *
- * styleFrames will also attempt to push their styles to the
- * interwikiFrame. The two methods work in unison to ensure that the
- * interwikiFrame receives all styles regardless of what order the iframes
- * initialise in.
+ * styleFrames will also attempt to push their styles to the interwikiFrame. The two methods work in unison to ensure
+ * that the interwikiFrame receives all styles regardless of what order the iframesinitialise in.
  *
- * This function is also called on window reload prompted by the
- * interwiki's click-to-refresh, at which point it is very likely that all
- * styleFrames will have finished initialising.
+ * This function is also called on window reload prompted by the interwiki's click-to-refresh, at which point it is
+ * very likely that all styleFrames will have finished initialising.
  */
 function pullStyles() {
-  // Find styleFrames in the parent that have initialised before this
-  // interwikiFrame did, and pull their query parameters
-  Array.prototype.slice.call(parent).forEach(function (frame) {
+  // Find styleFrames in the parent that have initialised before this interwikiFrame did, and pull their query
+  // parameters
+  Array.from(parent).forEach((frame) => {
     try {
       if (frame.isStyleFrame) {
         window.requestStyleChange(frame.location.search);
       }
-    } catch (error) {
-      // styleFrames that have not finished initialising will push their
-      // styles to the interwikiFrame when they are ready
+    } catch (error: unknown) {
+      // styleFrames that have not finished initialising will push their styles to the interwikiFrame when they are
+      // ready
       if (!(error instanceof DOMException)) {
         // All other errors must be reported
         throw error;
@@ -76,52 +108,53 @@ function pullStyles() {
 }
 
 /**
- * Main procedure for the interwiki. Prepare contextual data, apply CSS
- * styling, and add links to translations.
+ * Main procedure for the interwiki. Prepare contextual data, apply CSS styling, and add links to translations.
  *
- * @param {"scp" | "wl" | "br"} community - The community of the interwiki.
- * @param {String} pagename - The Wikidot fullname of the current page.
- * @param {String} currentBranchLang - The language code of the current branch
- * of the given community.
- * @param {String} type - The type of the interwiki, for potentially
- * different styles of interwiki in the same page.
- * @param {String} preventWikidotBaseStyle - Whether to prevent the
- * addition of Wikidot's base style to the interwiki. If any value other
- * than the string "true", the style will be added with priority -1.
+ * @param community - The community of the interwiki.
+ * @param pagename - The Wikidot fullname of the current page.
+ * @param currentBranchLang - The language code of the current branch of the given community.
+ * @param type - The type of the interwiki, for potentially different styles of interwiki in the same page.
+ * @param preventWikidotBaseStyle - Whether to prevent the addition of Wikidot's base style to the interwiki. If any
+ * value other than the string "true", the style will be added with priority -1.
  */
-export function createInterwiki(community, pagename, currentBranchLang, type, preventWikidotBaseStyle) {
-  pagename = pagename.replace(/^_default:/, "");
-  pagename = pagename.replace(/[^\w\-:]+/g, "-").toLowerCase();
-  pagename = pagename.replace(/^_/, "#").replace(/_/g, "-").replace(/#/, "_");
-  pagename = pagename.replace(/^-+|-+$/g, "");
+export function createInterwiki(params: InterwikiParams) {
+  const { community, pagename, lang: currentBranchLang, type, preventWikidotBaseStyle } = params;
+
+  const sanitizedPagename = pagename
+    .replace(/^_default:/, "")
+    .replace(/[^\w\-:]+/g, "-")
+    .toLowerCase()
+    .replace(/^_/, "#")
+    .replace(/_/g, "-")
+    .replace(/#/, "_")
+    .replace(/^-+|-+$/g, "");
 
   // Reverse replace the desolation canon URL
-  var desolations = new Array("desolation-backrooms-guide");
+  // const desolations = ["desolation-backrooms-guide"];
 
-  for (var i = 0; i < desolations.length; i++) {
-    if (pagename != desolations[i]) {
-      pagename = pagename.replace(/^desolation-/, "desolation:");
-    }
-  }
+  // for (var i = 0; i < desolations.length; i++) {
+  //   if (pagename != desolations[i]) {
+  //     pagename = pagename.replace(/^desolation-/, "desolation:");
+  //   }
+  // }
 
   // Get the list of branches for the given community
-  var branches = { wl: wlBranches, scp: scpBranches, br: brBranches }[community] || {};
+  const branches = branchesInfo[community];
 
-  // Get the config for the current branch, if configured
-  var currentBranch = branches[currentBranchLang] || {};
+  // Get the config for the current branch (lang already validated for this community)
+  const currentBranch = branches[currentBranchLang as keyof typeof branches];
 
   // Construct the function that will resize the frame after changes
-  var site = document.referrer;
-  var frameId = location.href.replace(/^.*\//, "/");
-  var resize = createResizeIframe(site, frameId);
+  const site = document.referrer;
+  const frameId = location.href.replace(/^.*\//, "/");
+  const resize = createResizeIframe(site, frameId);
 
   // Resize frame when size changes are detected
-  var observer = new ResizeObserver(resize);
+  const observer = new ResizeObserver(resize);
   observer.observe(document.documentElement);
 
-  // Construct the function that will be called internally and by
-  // styleFrames to request style changes
-  window.requestStyleChange = createRequestStyleChange(currentBranch.url || "", type || "default");
+  // Construct the function that will be called internally and by styleFrames to request style changes
+  window.requestStyleChange = createRequestStyleChange(currentBranch.url ?? "", type || "default");
 
   // Add Wikidot's base style unless instructed otherwise
   if (preventWikidotBaseStyle !== "true") {
@@ -129,5 +162,5 @@ export function createInterwiki(community, pagename, currentBranchLang, type, pr
   }
 
   pullStyles();
-  addTranslations(branches, currentBranchLang, pagename);
+  addTranslations(branches, currentBranchLang, sanitizedPagename);
 }

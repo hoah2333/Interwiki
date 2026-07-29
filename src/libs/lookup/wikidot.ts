@@ -1,43 +1,51 @@
+import type { AddLinkCallback, Branch } from "../links";
+
 /**
- * Searches for pages whose fullname matches the given string in the given
- * set of Wikidot sites using Wikidot's PageLookupQModule.
+ * Searches for pages whose fullname matches the given string in the given set of Wikidot sites using Wikidot's
+ * PageLookupQModule.
  *
- * @param {Branch} currentBranch - Configuration for the current branch.
- * @param {Object.<string, Branch>} branches - The branches configuration
- * for the current community. All passed branches will be searched for the
+ * @param currentBranch - Configuration for the current branch.
+ * @param branches - The branches configuration for the current community. All passed branches will be searched for the
  * target page.
- * @param {String} fullname - The substring to compare fullnames against.
- * If an underscore "_" is provided, all pages on the site will match.
- * @param {addLinkCallback} addLink - A function that will be called for
- * each found translation.
+ * @param fullname - The substring to compare fullnames against. If an underscore "_" is provided, all pages on the
+ * site will match.
+ * @param addLink - A function that will be called for each found translation.
  */
-export function wikidotLookup(currentBranch, branches, fullname, addLink) {
-  Object.keys(branches).forEach(function (branchLang) {
+export function wikidotLookup(
+  currentBranch: Branch,
+  branches: Record<string, Branch>,
+  fullname: string,
+  addLink: AddLinkCallback,
+) {
+  Object.keys(branches).forEach((branchLang) => {
     if (branches[branchLang].url === currentBranch.url) return;
-    var branch = branches[branchLang];
+    const branch = branches[branchLang];
     addTranslationForBranch(currentBranch, branchLang, branch, fullname, addLink);
   });
 }
 
 /**
- * For the given target branch, find a page that is a translation of the
- * paat fullname in the current branch. If one exists, create a menu item
- * for it.
+ * For the given target branch, find a page that is a translation of the paat fullname in the current branch. If one
+ * exists, create a menu item for it.
  *
- * @param {Branch} currentBranch - Configuration for the current branch.
- * @param {String} targetBranchLang - The language code of the branch.
- * @param {Branch} targetBranch - Configuration for the branch to lookup.
- * @param {String} fullname - The Wikidot fullname of the page to lookup.
- * @param {addLinkCallback} addLink - A function that will be
- * called for each found translation.
+ * @param currentBranch - Configuration for the current branch.
+ * @param targetBranchLang - The language code of the branch.
+ * @param targetBranch - Configuration for the branch to lookup.
+ * @param fullname - The Wikidot fullname of the page to lookup.
+ * @param addLink - A function that will be called for each found translation.
  */
-function addTranslationForBranch(currentBranch, targetBranchLang, targetBranch, fullname, addLink) {
-  // Replace the current site's category with the target site's category,
-  // if either are defined
+function addTranslationForBranch(
+  currentBranch: Branch,
+  targetBranchLang: string,
+  targetBranch: Branch,
+  fullname: string,
+  addLink: AddLinkCallback,
+) {
+  // Replace the current site's category with the target site's category, if either are defined
   // E.g.:
   // WL CN "wanderers:page" -> WL EN "page"
   // WL EN "page" -> WL CN "wanderers:page"
-  var targetFullname = fullname.replace(new RegExp("^" + currentBranch.category), targetBranch.category);
+  let targetFullname = fullname.replace(new RegExp("^" + currentBranch.category), targetBranch.category);
 
   // A fullname can be at most 60 characters long. If the target fullname
   // is any longer, truncate it
@@ -48,13 +56,13 @@ function addTranslationForBranch(currentBranch, targetBranchLang, targetBranch, 
   // been truncated. If the target fullname is shorter than the original
   // fullname (due to stripping the category), the last bit of the fullname
   // is not recoverable
-  var couldHaveBeenTruncated = fullname.length >= 59 && targetFullname.length < fullname.length;
+  const couldHaveBeenTruncated = fullname.length >= 59 && targetFullname.length < fullname.length;
 
   // Find pages in the target branch matching this fullname
-  findPagesInSiteStartingWith(currentBranch.url, targetBranch.id, targetFullname, function (fullnames) {
+  findPagesInSiteStartingWith(currentBranch.url, targetBranch.id, targetFullname, (fullnames) => {
     // If there is an exact match, a translation has been found
     if (
-      fullnames.some(function (matchedFullname) {
+      fullnames.some((matchedFullname) => {
         // If the end of the fullname is possibly missing, check only
         // that the matched fullname starts with the target.
         // This is unlikely to produce a false positive because the
@@ -77,32 +85,34 @@ function addTranslationForBranch(currentBranch, targetBranchLang, targetBranch, 
 }
 
 /**
- * In the given Wikidot site, searches for pages whose fullnames start with
- * the given string.
+ * In the given Wikidot site, searches for pages whose fullnames start with the given string.
  *
  * A 'fullname' is also referred to as a page's 'UNIX name'.
  *
- * @param {String} currentBranchUrl - Url for the current branch.
- * @param {String} siteId - The numeric Wikidot site ID of the site to
- * search.
- * @param {String} fullname - The substring to compare fullnames against.
- * If an underscore "_" is provided, all pages on the site will match.
- * @param {findPagesCallback} callback - Will be called with the array of
- * matching fullnames.
+ * @param currentBranchUrl - Url for the current branch.
+ * @param siteId - The numeric Wikidot site ID of the site to search.
+ * @param fullname - The substring to compare fullnames against. If an underscore "_" is provided, all pages
+ * on the site will match.
+ * @param callback - Will be called with the array of matching fullnames.
  */
-function findPagesInSiteStartingWith(currentBranchUrl, siteId, fullname, callback) {
-  var query = "&s=" + siteId + "&q=" + fullname;
-  var url = currentBranchUrl + "quickmodule.php?module=PageLookupQModule" + query;
-  var request = new XMLHttpRequest();
+function findPagesInSiteStartingWith(
+  currentBranchUrl: string,
+  siteId: string,
+  fullname: string,
+  callback: (page: Array<string>) => void,
+) {
+  const query = `&s=${siteId}&q=${fullname}`;
+  const url = `${currentBranchUrl}quickmodule.php?module=PageLookupQModule${query}`;
+  const request = new XMLHttpRequest();
   request.open("GET", url, true);
-  request.addEventListener("load", function () {
+  request.addEventListener("load", () => {
     if (request.readyState === XMLHttpRequest.DONE) {
-      var fullnames = [];
+      let fullnames: Array<string> = [];
       try {
         if (request.status === 200) {
-          var response = JSON.parse(request.responseText);
+          const response: { pages: Array<{ unix_name: string; title: string }> } = JSON.parse(request.responseText);
           // Format: {"pages":[{"unix_name":"scp-xxx","title":"SCP-XXX"}]}
-          fullnames = response.pages.map(function (page) {
+          fullnames = response.pages.map((page) => {
             return page.unix_name;
           });
         }
