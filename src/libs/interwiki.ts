@@ -1,57 +1,19 @@
 import { ResizeObserver } from "@juggle/resize-observer";
-import { variant, object, literal, string, picklist, optional, safeParse } from "valibot";
+import { safeParse } from "valibot";
 import { branchesInfo } from "./branchesInfo";
 import { createResizeIframe } from "./createResizeIframe";
 import { addTranslations } from "./links";
 import { addExternalStyle, createRequestStyleChange } from "./styles";
+import { interwikiParamsSchema } from "./validateSchema";
 
-import type { InferOutput } from "valibot";
-
-/** Object keys as a non-empty tuple for `picklist`. */
-function langKeys<T extends Record<string, unknown>>(branches: T) {
-  return Object.keys(branches) as [keyof T & string, ...(keyof T & string)[]];
-}
-
-/**
- * @param community - The community of the interwiki.
- * @param pagename - The Wikidot fullname of the current page.
- * @param currentBranchLang - The language code of the current branch of the given community.
- * @param type - The type of the interwiki, for potentially different styles of interwiki in the same page.
- * @param preventWikidotBaseStyle - Whether to prevent the addition of Wikidot's base style to the interwiki. If any
- * value other than the string "true", the style will be added with priority -1.
- */
-const interwikiParamsSchema = variant("community", [
-  object({
-    community: literal("scp"),
-    pagename: string(),
-    lang: picklist(langKeys(branchesInfo.scp)),
-    type: string(),
-    preventWikidotBaseStyle: optional(string(), "true"),
-  }),
-  object({
-    community: literal("wl"),
-    pagename: string(),
-    lang: picklist(langKeys(branchesInfo.wl)),
-    type: string(),
-    preventWikidotBaseStyle: optional(string(), "true"),
-  }),
-  object({
-    community: literal("br"),
-    pagename: string(),
-    lang: picklist(langKeys(branchesInfo.br)),
-    type: string(),
-    preventWikidotBaseStyle: optional(string(), "true"),
-  }),
-]);
-
-type InterwikiParams = InferOutput<typeof interwikiParamsSchema>;
+import type { InterwikiParams } from "./validateSchema";
 
 addEventListener("DOMContentLoaded", () => {
   const community = getQueryString(location.search, "community");
   const pagename = getQueryString(location.search, "pagename");
   const lang = getQueryString(location.search, "lang");
   const type = getQueryString(location.search, "type");
-  const preventWikidotBaseStyle = getQueryString(location.search, "preventWikidotBaseStyle") || "true";
+  const preventWikidotBaseStyle = getQueryString(location.search, "preventWikidotBaseStyle") ?? "true";
 
   const result = safeParse(interwikiParamsSchema, { community, pagename, lang, type, preventWikidotBaseStyle });
 
@@ -76,7 +38,7 @@ addEventListener("DOMContentLoaded", () => {
 export function getQueryString(query: string, name: string) {
   const searchParams = new URLSearchParams(query);
   const values = searchParams.getAll(name);
-  return values.length > 0 ? values[values.length - 1] : "";
+  return values.length > 0 ? values.at(-1) : "";
 }
 
 /**
@@ -122,12 +84,12 @@ export function createInterwiki(params: InterwikiParams) {
 
   const sanitizedPagename = pagename
     .replace(/^_default:/, "")
-    .replace(/[^\w\-:]+/g, "-")
+    .replaceAll(/[^\w\-:]+/g, "-")
     .toLowerCase()
     .replace(/^_/, "#")
-    .replace(/_/g, "-")
+    .replaceAll("_", "-")
     .replace(/#/, "_")
-    .replace(/^-+|-+$/g, "");
+    .replaceAll(/^-+|-+$/g, "");
 
   // Reverse replace the desolation canon URL
   // const desolations = ["desolation-backrooms-guide"];

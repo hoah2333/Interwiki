@@ -36,20 +36,24 @@ export interface Branch {
  */
 export function addTranslations(branches: Record<string, Branch>, currentBranchLang: string, pagename: string) {
   // Get the config for the current branch, if configured
-  const currentBranch = branches[currentBranchLang] || {};
+  const currentBranch = branches[currentBranchLang];
 
   // Hide the side block by default (will be unhidden if there is at least one translation)
-  const sideBlock = Array.from(document.getElementsByClassName("side-block")).filter(
+  const sideBlock = Array.from(document.querySelectorAll(".side-block")).find(
     (element) => element instanceof HTMLDivElement,
-  )[0];
-
-  sideBlock.style.display = "none";
+  );
 
   // Construct the header
-  const header = Array.from(document.querySelectorAll(".heading p")).filter(
+  const header = Array.from(document.querySelectorAll(".heading p")).find(
     (element) => element instanceof HTMLParagraphElement,
-  )[0];
-  header.innerText = currentBranch.head;
+  );
+
+  if (!sideBlock || !header) {
+    return;
+  }
+
+  sideBlock.style.display = "none";
+  header.textContent = currentBranch.head;
 
   lookupMethod(
     currentBranch,
@@ -72,10 +76,13 @@ export function addTranslations(branches: Record<string, Branch>, currentBranchL
  * @param isOriginal - Whether this link is for the original article rather than a translation.
  */
 function addTranslationLink(pageUrl: string, branchName: string, branchLang: string, isOriginal: boolean) {
-  const sideBlock = Array.from(document.getElementsByClassName("side-block")).filter(
+  const sideBlock = Array.from(document.querySelectorAll(".side-block")).find(
     (element) => element instanceof HTMLDivElement,
-  )[0];
-  const menuItems = Array.from(sideBlock.getElementsByClassName("menu-item")).filter(
+  );
+  if (!sideBlock) {
+    return;
+  }
+  const menuItems = Array.from(sideBlock.querySelectorAll(".menu-item")).filter(
     (element) => element instanceof HTMLDivElement,
   );
 
@@ -85,7 +92,9 @@ function addTranslationLink(pageUrl: string, branchName: string, branchLang: str
   // Create the new menu item
   const newMenuItem = document.createElement("div");
   newMenuItem.classList.add("menu-item");
-  if (isOriginal) newMenuItem.classList.add("original");
+  if (isOriginal) {
+    newMenuItem.classList.add("original");
+  }
   // Record its branch's language code in the element
   newMenuItem.setAttribute("name", branchLang);
 
@@ -94,23 +103,24 @@ function addTranslationLink(pageUrl: string, branchName: string, branchLang: str
   bullet.setAttribute("src", "//sigma9.scpwikicn.com/cn/img/default.png");
   bullet.setAttribute("alt", "default.png");
   bullet.classList.add("image");
-  newMenuItem.appendChild(bullet);
+  newMenuItem.append(bullet);
 
   // Create the actual link
   const link = document.createElement("a");
   link.setAttribute("href", pageUrl);
   link.setAttribute("target", "_parent");
-  link.innerText = branchName;
-  newMenuItem.appendChild(link);
+  link.textContent = branchName;
+  newMenuItem.append(link);
 
   // Add the new menu item to the end of the side block by default
-  sideBlock.appendChild(newMenuItem);
+  sideBlock.append(newMenuItem);
   // Then find the first existing menu item whose lang code is alphabetically greater than the new item, and move the
   // new item to just before it
   menuItems.some((menuItem) => {
     if ((menuItem.getAttribute("name") ?? "") > branchLang) {
-      sideBlock.insertBefore(newMenuItem, menuItem);
+      menuItem.before(newMenuItem);
       return true;
     }
+    return false;
   });
 }

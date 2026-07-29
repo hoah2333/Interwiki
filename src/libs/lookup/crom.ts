@@ -7,7 +7,8 @@ import type { AddLinkCallback, Branch } from "../links";
  * @param substitutions
  * @returns
  */
-const gql = (query: TemplateStringsArray, ...substitutions: string[]): string => String.raw(query, ...substitutions);
+const gql = (query: TemplateStringsArray, ...substitutions: Array<string>): string =>
+  String.raw(query, ...substitutions);
 
 // GraphQL query for Crom API
 const query = gql`
@@ -39,7 +40,7 @@ interface CromOriginalPage {
   /** The URL of this page. */
   url: string;
   /** URLs of translations of this page. */
-  translations: CromPage[];
+  translations: Array<CromPage>;
 }
 
 /**
@@ -80,7 +81,7 @@ export function cromLookup(
  * @param url
  */
 function normaliseUrl(url: string) {
-  if (url.indexOf(".wikidot.com") === -1) {
+  if (!url.includes(".wikidot.com")) {
     throw new Error(`Crom requires wikidot.com branch URLs (${url})`);
   }
   return url.replace(/^https:/, "http:");
@@ -108,23 +109,25 @@ function parseTranslations(
   let translations: Array<string> = [];
 
   // Extract translations of this page
-  translations = translations.concat(response.translations.map(url));
+  translations = [...translations, ...response.translations.map(url)];
   // Extract translations of this page's translation root
   if (response.translationOf) {
     original = response.translationOf.url;
     translations.push(original);
-    translations = translations.concat(response.translationOf.translations.map(url));
+    translations = [...translations, ...response.translationOf.translations.map(url)];
   }
 
   translations.forEach((translation) => {
     // Do not add this translation if it is from the current branch
-    const fromCurrentBranch = translation.indexOf(normaliseUrl(currentBranch.url)) === 0;
-    if (fromCurrentBranch) return;
+    const fromCurrentBranch = translation.startsWith(normaliseUrl(currentBranch.url));
+    if (fromCurrentBranch) {
+      return;
+    }
 
-    const targetBranchLang = Object.keys(branches).find((branchLang) => {
-      return translation.indexOf(normaliseUrl(branches[branchLang].url)) === 0;
-    });
-    if (!targetBranchLang) {
+    const targetBranchLang = Object.keys(branches).find((branchLang) =>
+      translation.startsWith(normaliseUrl(branches[branchLang].url)),
+    );
+    if (targetBranchLang === undefined || targetBranchLang === "") {
       // Crom may support unofficial/unconfigured branches
       console.warn(`Interwiki: unknown branch ${translation}`);
       return;
@@ -167,5 +170,5 @@ function executeQuery(url: string, endpointIndex: number, callback: (response: C
       }
     }
   });
-  request.send(JSON.stringify({ query: query, variables: { url: url } }));
+  request.send(JSON.stringify({ query, variables: { url } }));
 }

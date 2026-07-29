@@ -18,7 +18,9 @@ export function wikidotLookup(
   addLink: AddLinkCallback,
 ) {
   Object.keys(branches).forEach((branchLang) => {
-    if (branches[branchLang].url === currentBranch.url) return;
+    if (branches[branchLang].url === currentBranch.url) {
+      return;
+    }
     const branch = branches[branchLang];
     addTranslationForBranch(currentBranch, branchLang, branch, fullname, addLink);
   });
@@ -45,11 +47,11 @@ function addTranslationForBranch(
   // E.g.:
   // WL CN "wanderers:page" -> WL EN "page"
   // WL EN "page" -> WL CN "wanderers:page"
-  let targetFullname = fullname.replace(new RegExp("^" + currentBranch.category), targetBranch.category);
+  let targetFullname = fullname.replace(new RegExp(`^${currentBranch.category}`), targetBranch.category);
 
   // A fullname can be at most 60 characters long. If the target fullname
   // is any longer, truncate it
-  targetFullname = targetFullname.substring(0, 60).replace(/-$/, "");
+  targetFullname = targetFullname.slice(0, 60).replace(/-$/, "");
 
   // If the original fullname was 59 characters long (because the limit is
   // 60, minus one if it would have ended with a hyphen), it could have
@@ -68,7 +70,7 @@ function addTranslationForBranch(
         // This is unlikely to produce a false positive because the
         // fullnames involved are very long (~60 chars)
         if (couldHaveBeenTruncated) {
-          return matchedFullname.indexOf(targetFullname) === 0;
+          return matchedFullname.startsWith(targetFullname);
         }
         // Otherwise, check for exact matches only
         return matchedFullname === targetFullname;
@@ -112,13 +114,11 @@ function findPagesInSiteStartingWith(
         if (request.status === 200) {
           const response: { pages: Array<{ unix_name: string; title: string }> } = JSON.parse(request.responseText);
           // Format: {"pages":[{"unix_name":"scp-xxx","title":"SCP-XXX"}]}
-          fullnames = response.pages.map((page) => {
-            return page.unix_name;
-          });
+          fullnames = response.pages.map((page) => page.unix_name);
         }
       } catch (error) {
         // Parsing failed - assume there are no matching pages
-        console.error("Interwiki: lookup failed for " + siteId + "/" + fullname);
+        console.error(`Interwiki: lookup failed for ${siteId}/${fullname}`);
         console.error(error);
       } finally {
         callback(fullnames);

@@ -13,22 +13,28 @@ export function createRequestStyleChange(siteUrl: string, type: string) {
    * @param request - A URL query originating from a styleFrame, requesting a style change for the interwikiFrame.
    */
   return function requestStyleChange(request: string) {
-    const styleType = getQueryString(request, "type") || "default";
+    const styleType = getQueryString(request, "type") ?? "default";
     const priorityRaw = getQueryString(request, "priority");
     const priority = Number(priorityRaw);
-    const overrideRaw = getQueryString(request, "override") || "0";
+    const overrideRaw = getQueryString(request, "override") ?? "0";
     const override = Boolean(Number(overrideRaw));
     if (isNaN(priority)) {
       console.error(`Interwiki: rejected style with priority ${priorityRaw}`);
       return;
     }
-    if (styleType != type) return;
+    if (styleType !== type) {
+      return;
+    }
 
     const theme = getQueryString(request, "theme");
-    if (theme) addExternalStyle(priority, urlFromTheme(siteUrl, theme), override);
+    if (theme !== undefined && theme !== "") {
+      addExternalStyle(priority, urlFromTheme(siteUrl, theme), override);
+    }
 
     const css = getQueryString(request, "css");
-    if (css) addInternalStyle(priority, css, override);
+    if (css !== undefined && css !== "") {
+      addInternalStyle(priority, css, override);
+    }
   };
 }
 
@@ -44,21 +50,23 @@ function addInternalStyle(priority: number, css: string, override: boolean) {
   const styleElements = Array.from(document.head.querySelectorAll("style.custom-style")).filter(
     (element) => element instanceof HTMLStyleElement,
   );
-  if (styleElements.some(duplicatesStyle(priority, css))) return;
+  if (styleElements.some(duplicatesStyle(priority, css))) {
+    return;
+  }
 
   if (override) {
     const overrideElement = styleElements.find(duplicatesPriority(priority));
     // Override the style of a pre-existing styling element
     if (overrideElement) {
       console.log(`Interwiki: style at priority ${priority} is being overrided.`);
-      overrideElement.innerText = css;
+      overrideElement.textContent = css;
       return;
     }
   }
 
   // Create a new style elements for the CSS
   const style = document.createElement("style");
-  style.innerText = css;
+  style.textContent = css;
 
   // Insert the style into the appropriate position in the head
   insertStyle(priority, style);
@@ -76,7 +84,9 @@ export function addExternalStyle(priority: number, url: string, override: boolea
   const linkElements = Array.from(document.head.querySelectorAll("link.custom-style")).filter(
     (element: Element) => element instanceof HTMLLinkElement,
   );
-  if (linkElements.some(duplicatesStyle(priority, url))) return;
+  if (linkElements.some(duplicatesStyle(priority, url))) {
+    return;
+  }
 
   if (override) {
     const overrideElement = linkElements.find(duplicatesPriority(priority));
@@ -116,10 +126,12 @@ function insertStyle(newPriority: number, newStylingElement: HTMLLinkElement | H
   const newTagName = newStylingElement.tagName;
   const wasInserted = stylingElements.some((stylingElement) => {
     const priority = Number(stylingElement.dataset.priority);
-    const tagName = stylingElement.tagName;
+    const { tagName } = stylingElement;
 
     // If the new priority is more than the current priority, continue
-    if (newPriority > priority) return false;
+    if (newPriority > priority) {
+      return false;
+    }
 
     // If the two priorities are equal...
     if (priority === newPriority) {
@@ -151,7 +163,7 @@ function insertStyle(newPriority: number, newStylingElement: HTMLLinkElement | H
   if (!wasInserted) {
     // The element would not have been inserted if it is the first, or if its priority is greater than all existing
     // priorities
-    document.head.appendChild(newStylingElement);
+    document.head.append(newStylingElement);
   }
 }
 
@@ -164,14 +176,14 @@ function insertStyle(newPriority: number, newStylingElement: HTMLLinkElement | H
  */
 function duplicatesStyle(priority: number, value: string) {
   const isDuplicate = (styleElement: HTMLLinkElement | HTMLStyleElement): boolean => {
-    if (Number(styleElement.getAttribute("data-priority")) !== priority) {
+    if (Number(styleElement.dataset.priority) !== priority) {
       return false;
     }
     if (styleElement.tagName === "LINK") {
       return styleElement.getAttribute("href") === value;
     }
     if (styleElement.tagName === "STYLE") {
-      return styleElement.innerText === value;
+      return styleElement.textContent === value;
     }
     return false;
   };
@@ -187,7 +199,7 @@ function duplicatesStyle(priority: number, value: string) {
  */
 function duplicatesPriority(priority: number) {
   const isDuplicate = (styleElement: HTMLLinkElement | HTMLStyleElement): boolean =>
-    Number(styleElement.getAttribute("data-priority")) === priority;
+    Number(styleElement.dataset.priority) === priority;
 
   return isDuplicate;
 }
@@ -207,7 +219,7 @@ function duplicatesPriority(priority: number) {
  */
 function urlFromTheme(siteUrl: string, theme: string) {
   // If the theme is already a full URL, return it
-  if (theme.indexOf("http") === 0 || theme.indexOf("//") === 0) {
+  if (theme.startsWith("http") || theme.startsWith("//")) {
     return theme;
   }
 
@@ -220,7 +232,7 @@ function urlFromTheme(siteUrl: string, theme: string) {
   }
 
   // Assume it's a fullname
-  if (theme.indexOf("/") === -1) {
+  if (!theme.includes("/")) {
     return `${siteUrl}/local--code/${theme}/1`;
   }
   // Assume of the form <fullname>/code/1

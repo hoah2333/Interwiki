@@ -14,12 +14,14 @@ export const flags = { showInterwiki: false };
  * it.
  */
 export function createResizeIframe(site: string, frameId: string) {
-  const container = document.getElementById("resizer-container");
+  const container = document.querySelector("#resizer-container");
   const resizer = document.createElement("iframe");
   resizer.style.display = "none";
-  container?.appendChild(resizer);
+  container?.append(resizer);
 
-  if (frameId[0] !== "/") frameId = `/${frameId}`;
+  if (!frameId.startsWith("/")) {
+    frameId = `/${frameId}`;
+  }
 
   return debounce(() => {
     if (flags.showInterwiki) {
@@ -29,7 +31,9 @@ export function createResizeIframe(site: string, frameId: string) {
       // The container must not have display:none for this to work, which is why the iframe has it instead
       let height = container?.getBoundingClientRect().top;
       // Brute-force past any subpixel issues
-      if (height) height += 1;
+      if (height !== undefined && height > 0) {
+        height += 1;
+      }
       resizer.src = `${site}/common--javascript/resize-iframe.html?#${height}${frameId}`;
     }
   }, 750);
