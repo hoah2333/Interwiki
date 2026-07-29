@@ -20,6 +20,9 @@ importers:
         specifier: ^1.4.2
         version: 1.4.2(typescript@7.0.2)
     devDependencies:
+      "@types/node":
+        specifier: ^26.1.2
+        version: 26.1.2
       oxfmt:
         specifier: ^0.61.0
         version: 0.61.0
@@ -34,7 +37,7 @@ importers:
         version: 7.0.2
       vite:
         specifier: ^8.1.5
-        version: 8.1.5
+        version: 8.1.5(@types/node@26.1.2)
 
 packages:
   "@emnapi/core@1.11.1":
@@ -634,6 +637,12 @@ packages:
         integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==,
       }
 
+  "@types/node@26.1.2":
+    resolution:
+      {
+        integrity: sha512-Vu4a5UFA9rIIFJ7rB/Vaafh9lrCQszopTCx6KjFboXTGQbPNasehVR5TEiithSDGyd1DEiUByggTZsg8jukeIg==,
+      }
+
   "@typescript/typescript-aix-ppc64@7.0.2":
     resolution:
       {
@@ -1073,6 +1082,12 @@ packages:
     engines: { node: ">=16.20.0" }
     hasBin: true
 
+  undici-types@8.3.0:
+    resolution:
+      {
+        integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==,
+      }
+
   valibot@1.4.2:
     resolution:
       {
@@ -1346,6 +1361,10 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  "@types/node@26.1.2":
+    dependencies:
+      undici-types: 8.3.0
+
   "@typescript/typescript-aix-ppc64@7.0.2":
     optional: true
 
@@ -1592,11 +1611,13 @@ snapshots:
       "@typescript/typescript-win32-arm64": 7.0.2
       "@typescript/typescript-win32-x64": 7.0.2
 
+  undici-types@8.3.0: {}
+
   valibot@1.4.2(typescript@7.0.2):
     optionalDependencies:
       typescript: 7.0.2
 
-  vite@8.1.5:
+  vite@8.1.5(@types/node@26.1.2):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.5
@@ -1604,4 +1625,5 @@ snapshots:
       rolldown: 1.1.5
       tinyglobby: 0.2.17
     optionalDependencies:
+      "@types/node": 26.1.2
       fsevents: 2.3.3
