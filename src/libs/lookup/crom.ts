@@ -18,10 +18,7 @@ var query =
 
 // GraphQL endpoints for Crom API fallback
 // Generally used for proxying
-var apiList = [
-  "https://api.crom.avn.sh/graphql",
-  "https://zh.xjo.ch/crom/graphql",
-]
+var apiList = ["https://api.crom.avn.sh/graphql", "https://zh.xjo.ch/crom/graphql"];
 
 /**
  * @typedef CromPage
@@ -106,15 +103,12 @@ function parseTranslations(response, currentBranch, branches, addLink) {
   if (response.translationOf) {
     original = response.translationOf.url;
     translations.push(original);
-    translations = translations.concat(
-      response.translationOf.translations.map(url)
-    );
+    translations = translations.concat(response.translationOf.translations.map(url));
   }
 
   translations.forEach(function (translation) {
     // Do not add this translation if it is from the current branch
-    var fromCurrentBranch =
-      translation.indexOf(normaliseUrl(currentBranch.url)) === 0;
+    var fromCurrentBranch = translation.indexOf(normaliseUrl(currentBranch.url)) === 0;
     if (fromCurrentBranch) return;
 
     var targetBranchLang = Object.keys(branches).find(function (branchLang) {
@@ -126,12 +120,7 @@ function parseTranslations(response, currentBranch, branches, addLink) {
       return;
     }
 
-    addLink(
-      translation,
-      branches[targetBranchLang].name,
-      targetBranchLang,
-      original === translation
-    );
+    addLink(translation, branches[targetBranchLang].name, targetBranchLang, original === translation);
   });
 }
 

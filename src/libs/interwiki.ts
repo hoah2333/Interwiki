@@ -2,9 +2,9 @@ import { createResizeIframe } from "./createResizeIframe";
 import { addTranslations } from "./links";
 import { addExternalStyle, createRequestStyleChange } from "./styles";
 
+import { brBranches } from "./branches-info-br";
 import { scpBranches } from "./branches-info-scp";
 import { wlBranches } from "./branches-info-wl";
-import { brBranches } from "./branches-info-br";
 
 import { ResizeObserver } from "@juggle/resize-observer";
 
@@ -13,10 +13,7 @@ addEventListener("DOMContentLoaded", function () {
   var pagename = getQueryString(location.search, "pagename");
   var lang = getQueryString(location.search, "lang");
   var type = getQueryString(location.search, "type");
-  var preventWikidotBaseStyle = getQueryString(
-    location.search,
-    "preventWikidotBaseStyle"
-  ) || "true";
+  var preventWikidotBaseStyle = getQueryString(location.search, "preventWikidotBaseStyle") || "true";
 
   createInterwiki(community, pagename, lang, type, preventWikidotBaseStyle);
 
@@ -92,22 +89,14 @@ function pullStyles() {
  * addition of Wikidot's base style to the interwiki. If any value other
  * than the string "true", the style will be added with priority -1.
  */
-export function createInterwiki(
-  community,
-  pagename,
-  currentBranchLang,
-  type,
-  preventWikidotBaseStyle
-) {
+export function createInterwiki(community, pagename, currentBranchLang, type, preventWikidotBaseStyle) {
   pagename = pagename.replace(/^_default:/, "");
   pagename = pagename.replace(/[^\w\-:]+/g, "-").toLowerCase();
   pagename = pagename.replace(/^_/, "#").replace(/_/g, "-").replace(/#/, "_");
   pagename = pagename.replace(/^-+|-+$/g, "");
 
   // Reverse replace the desolation canon URL
-  var desolations = new Array(
-    "desolation-backrooms-guide"
-  );
+  var desolations = new Array("desolation-backrooms-guide");
 
   for (var i = 0; i < desolations.length; i++) {
     if (pagename != desolations[i]) {
@@ -132,18 +121,11 @@ export function createInterwiki(
 
   // Construct the function that will be called internally and by
   // styleFrames to request style changes
-  window.requestStyleChange = createRequestStyleChange(
-    currentBranch.url || "",
-    type || "default"
-  );
+  window.requestStyleChange = createRequestStyleChange(currentBranch.url || "", type || "default");
 
   // Add Wikidot's base style unless instructed otherwise
   if (preventWikidotBaseStyle !== "true") {
-    addExternalStyle(
-      -1,
-      "//d3g0gp89917ko0.cloudfront.net/v--3e3a6f7dbcc9/common--theme/base/css/style.css",
-      false
-    );
+    addExternalStyle(-1, "//d3g0gp89917ko0.cloudfront.net/v--3e3a6f7dbcc9/common--theme/base/css/style.css", false);
   }
 
   pullStyles();

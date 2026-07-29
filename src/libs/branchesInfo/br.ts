@@ -1,18 +1,6 @@
 export var brBranches = {
-  cn: {
-    name: "中文",
-    head: "其他语言",
-    url: "http://backrooms-wiki-cn.wikidot.com/",
-    id: "4716348",
-    category: "",
-  },
-  en: {
-    name: "English",
-    head: "Languages",
-    url: "http://backrooms-wiki.wikidot.com/",
-    id: "4431268",
-    category: "",
-  },
+  cn: { name: "中文", head: "其他语言", url: "http://backrooms-wiki-cn.wikidot.com/", id: "4716348", category: "" },
+  en: { name: "English", head: "Languages", url: "http://backrooms-wiki.wikidot.com/", id: "4431268", category: "" },
   es: {
     name: "Español",
     head: "En otros idiomas",
@@ -76,18 +64,6 @@ export var brBranches = {
     id: "4548260",
     category: "",
   },
-  th: {
-    name: "ภาษาไทย",
-    head: "ภาษาอื่นๆ",
-    url: "http://backrooms-th.wikidot.com/",
-    id: "4911723",
-    category: "",
-  },
-  vn: {
-    name: "Tiếng Việt",
-    head: "Ngôn ngữ",
-    url: "http://backrooms-vn.wikidot.com/",
-    id: "4748367",
-    category: "",
-  },
+  th: { name: "ภาษาไทย", head: "ภาษาอื่นๆ", url: "http://backrooms-th.wikidot.com/", id: "4911723", category: "" },
+  vn: { name: "Tiếng Việt", head: "Ngôn ngữ", url: "http://backrooms-vn.wikidot.com/", id: "4748367", category: "" },
 };

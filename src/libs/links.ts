@@ -58,16 +58,11 @@ export function addTranslations(branches, currentBranchLang, pagename) {
   var header = document.querySelector(".heading p");
   header.innerText = currentBranch.head;
 
-  lookupMethod(
-    currentBranch,
-    branches,
-    pagename,
-    function (pageUrl, branchName, branchLang, isOriginal) {
-      addTranslationLink(pageUrl, branchName, branchLang, isOriginal);
-      // Indicate that data has been received
-      flags.showInterwiki = true;
-    }
-  );
+  lookupMethod(currentBranch, branches, pagename, function (pageUrl, branchName, branchLang, isOriginal) {
+    addTranslationLink(pageUrl, branchName, branchLang, isOriginal);
+    // Indicate that data has been received
+    flags.showInterwiki = true;
+  });
 }
 
 /**
@@ -82,9 +77,7 @@ export function addTranslations(branches, currentBranchLang, pagename) {
  */
 function addTranslationLink(pageUrl, branchName, branchLang, isOriginal) {
   var sideBlock = document.getElementsByClassName("side-block")[0];
-  var menuItems = Array.prototype.slice.call(
-    sideBlock.getElementsByClassName("menu-item")
-  );
+  var menuItems = Array.prototype.slice.call(sideBlock.getElementsByClassName("menu-item"));
 
   // There is a translation, so unhide the side block if it is hidden
   sideBlock.style.display = "";
@@ -98,10 +91,7 @@ function addTranslationLink(pageUrl, branchName, branchLang, isOriginal) {
 
   // Create the bullet point image
   var bullet = document.createElement("img");
-  bullet.setAttribute(
-    "src",
-    "//sigma9.scpwikicn.com/cn/img/default.png"
-  );
+  bullet.setAttribute("src", "//sigma9.scpwikicn.com/cn/img/default.png");
   bullet.setAttribute("alt", "default.png");
   bullet.classList.add("image");
   newMenuItem.appendChild(bullet);

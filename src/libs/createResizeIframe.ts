@@ -30,12 +30,7 @@ export function createResizeIframe(site, frameId) {
       var height = container.getBoundingClientRect().top;
       // Brute-force past any subpixel issues
       if (height) height += 1;
-      resizer.src =
-        site +
-        "/common--javascript/resize-iframe.html?" +
-        "#" +
-        height +
-        frameId;
+      resizer.src = site + "/common--javascript/resize-iframe.html?" + "#" + height + frameId;
     }
   }, 750);
 }

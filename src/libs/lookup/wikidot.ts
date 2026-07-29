@@ -15,13 +15,7 @@ export function wikidotLookup(currentBranch, branches, fullname, addLink) {
   Object.keys(branches).forEach(function (branchLang) {
     if (branches[branchLang].url === currentBranch.url) return;
     var branch = branches[branchLang];
-    addTranslationForBranch(
-      currentBranch,
-      branchLang,
-      branch,
-      fullname,
-      addLink
-    );
+    addTranslationForBranch(currentBranch, branchLang, branch, fullname, addLink);
   });
 }
 
@@ -37,22 +31,13 @@ export function wikidotLookup(currentBranch, branches, fullname, addLink) {
  * @param {addLinkCallback} addLink - A function that will be
  * called for each found translation.
  */
-function addTranslationForBranch(
-  currentBranch,
-  targetBranchLang,
-  targetBranch,
-  fullname,
-  addLink
-) {
+function addTranslationForBranch(currentBranch, targetBranchLang, targetBranch, fullname, addLink) {
   // Replace the current site's category with the target site's category,
   // if either are defined
   // E.g.:
   // WL CN "wanderers:page" -> WL EN "page"
   // WL EN "page" -> WL CN "wanderers:page"
-  var targetFullname = fullname.replace(
-    new RegExp("^" + currentBranch.category),
-    targetBranch.category
-  );
+  var targetFullname = fullname.replace(new RegExp("^" + currentBranch.category), targetBranch.category);
 
   // A fullname can be at most 60 characters long. If the target fullname
   // is any longer, truncate it
@@ -63,38 +48,32 @@ function addTranslationForBranch(
   // been truncated. If the target fullname is shorter than the original
   // fullname (due to stripping the category), the last bit of the fullname
   // is not recoverable
-  var couldHaveBeenTruncated =
-    fullname.length >= 59 && targetFullname.length < fullname.length;
+  var couldHaveBeenTruncated = fullname.length >= 59 && targetFullname.length < fullname.length;
 
   // Find pages in the target branch matching this fullname
-  findPagesInSiteStartingWith(
-    currentBranch.url,
-    targetBranch.id,
-    targetFullname,
-    function (fullnames) {
-      // If there is an exact match, a translation has been found
-      if (
-        fullnames.some(function (matchedFullname) {
-          // If the end of the fullname is possibly missing, check only
-          // that the matched fullname starts with the target.
-          // This is unlikely to produce a false positive because the
-          // fullnames involved are very long (~60 chars)
-          if (couldHaveBeenTruncated) {
-            return matchedFullname.indexOf(targetFullname) === 0;
-          }
-          // Otherwise, check for exact matches only
-          return matchedFullname === targetFullname;
-        })
-      ) {
-        addLink(
-          targetBranch.url + targetFullname,
-          targetBranch.name,
-          targetBranchLang,
-          false // Cannot distinguish original translation
-        );
-      }
+  findPagesInSiteStartingWith(currentBranch.url, targetBranch.id, targetFullname, function (fullnames) {
+    // If there is an exact match, a translation has been found
+    if (
+      fullnames.some(function (matchedFullname) {
+        // If the end of the fullname is possibly missing, check only
+        // that the matched fullname starts with the target.
+        // This is unlikely to produce a false positive because the
+        // fullnames involved are very long (~60 chars)
+        if (couldHaveBeenTruncated) {
+          return matchedFullname.indexOf(targetFullname) === 0;
+        }
+        // Otherwise, check for exact matches only
+        return matchedFullname === targetFullname;
+      })
+    ) {
+      addLink(
+        targetBranch.url + targetFullname,
+        targetBranch.name,
+        targetBranchLang,
+        false, // Cannot distinguish original translation
+      );
     }
-  );
+  });
 }
 
 /**
@@ -129,9 +108,7 @@ function findPagesInSiteStartingWith(currentBranchUrl, siteId, fullname, callbac
         }
       } catch (error) {
         // Parsing failed - assume there are no matching pages
-        console.error(
-          "Interwiki: lookup failed for " + siteId + "/" + fullname
-        );
+        console.error("Interwiki: lookup failed for " + siteId + "/" + fullname);
         console.error(error);
       } finally {
         callback(fullnames);

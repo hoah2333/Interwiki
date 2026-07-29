@@ -1,11 +1,5 @@
 export var wlBranches = {
-  cn: {
-    name: "中文",
-    head: "其他语言",
-    url: "https://scp-wiki-cn.wikidot.com/",
-    id: "530812",
-    category: "wanderers:",
-  },
+  cn: { name: "中文", head: "其他语言", url: "https://scp-wiki-cn.wikidot.com/", id: "530812", category: "wanderers:" },
   cs: {
     name: "Čeština",
     head: "V jiných jazycích",
@@ -13,13 +7,7 @@ export var wlBranches = {
     id: "4600566",
     category: "",
   },
-  en: {
-    name: "English",
-    head: "Languages",
-    url: "https://wanderers-library.wikidot.com/",
-    id: "146034",
-    category: "",
-  },
+  en: { name: "English", head: "Languages", url: "https://wanderers-library.wikidot.com/", id: "146034", category: "" },
   fr: {
     name: "Français",
     head: "Dans d’autres langues",
