@@ -34,7 +34,7 @@ export interface Branch {
  * @param currentBranchLang - The language code of the current branch, as defined in the community's branches config.
  * @param pagename - The fullname of the page in the current branch to find translations for.
  */
-export function addTranslations(branches: Record<string, Branch>, currentBranchLang: string, pagename: string) {
+export async function addTranslations(branches: Record<string, Branch>, currentBranchLang: string, pagename: string) {
   // Get the config for the current branch, if configured
   const currentBranch = branches[currentBranchLang];
 
@@ -55,7 +55,7 @@ export function addTranslations(branches: Record<string, Branch>, currentBranchL
   sideBlock.style.display = "none";
   header.textContent = currentBranch.head;
 
-  lookupMethod(
+  await lookupMethod(
     currentBranch,
     branches,
     pagename,

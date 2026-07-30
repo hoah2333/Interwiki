@@ -1,3 +1,6 @@
+import { parse } from "valibot";
+import { cromRequestSchema, cromTranslationsWithPageSchema } from "../validateSchema";
+
 import type { AddLinkCallback, Branch } from "../links";
 
 /**
@@ -29,7 +32,7 @@ const query = gql`
 
 // GraphQL endpoints for Crom API fallback
 // Generally used for proxying
-const apiList = ["https://api.crom.avn.sh/graphql", "https://zh.xjo.ch/crom/graphql"];
+const apiList = ["https://apiv1.crom.avn.sh/graphql", "https://zh.xjo.ch/crom/graphql"];
 
 interface CromPage {
   /** The URL of this page. */
@@ -64,13 +67,13 @@ interface CromTranslations {
  * @param fullname - The fullname of the target page.
  * @param addLink - A function that will be called for each found translation.
  */
-export function cromLookup(
+export async function cromLookup(
   currentBranch: Branch,
   branches: Record<string, Branch>,
   fullname: string,
   addLink: AddLinkCallback,
 ) {
-  executeQuery(normaliseUrl(currentBranch.url + fullname), 0, (response: CromTranslations) => {
+  await executeQuery(normaliseUrl(currentBranch.url + fullname), 0, (response: CromTranslations) => {
     parseTranslations(response, currentBranch, branches, addLink);
   });
 }
@@ -144,31 +147,30 @@ function parseTranslations(
  * @param endpointIndex - Retry index for Crom endpoints.
  * @param callback - Will be called with the response from Crom.
  */
-function executeQuery(url: string, endpointIndex: number, callback: (response: CromTranslations) => void) {
-  const request = new XMLHttpRequest();
-  request.open("POST", apiList[endpointIndex], true);
-  request.setRequestHeader("Content-Type", "application/json");
-  request.addEventListener("readystatechange", () => {
-    if (request.readyState === XMLHttpRequest.DONE) {
-      try {
-        if (request.status === 200) {
-          const response = JSON.parse(request.responseText);
-          if (response.errors && response.errors.length > 0) {
-            throw new Error(response.errors);
-          }
-          callback(response.data.page);
-        } else {
-          throw new Error(String(request.status));
-        }
-      } catch (error) {
-        if (endpointIndex++ < apiList.length) {
-          executeQuery(url, endpointIndex, callback);
-        } else {
-          console.error(`Interwiki: lookup failed for ${url}`);
-          console.error(error);
-        }
+async function executeQuery(url: string, endpointIndex: number, callback: (response: CromTranslations) => void) {
+  try {
+    const request = await fetch(apiList[endpointIndex], {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { url } }),
+    });
+    if (request.ok) {
+      const response = parse(cromRequestSchema(cromTranslationsWithPageSchema), await request.json());
+      if (response.data === null) {
+        throw new Error(
+          response.errors.length > 0 ? response.errors.map((error) => error.message).join(", ") : "No specific error",
+        );
       }
+      callback(response.data.page);
+    } else {
+      throw new Error(String(request.status));
     }
-  });
-  request.send(JSON.stringify({ query, variables: { url } }));
+  } catch (error) {
+    if (endpointIndex++ < apiList.length) {
+      await executeQuery(url, endpointIndex, callback);
+    } else {
+      console.error(`Interwiki: lookup failed for ${url}`);
+      console.error(error);
+    }
+  }
 }

@@ -1,11 +1,16 @@
-import { variant, object, literal, string, picklist, optional } from "valibot";
+import { any, array, literal, null_, nullable, object, optional, picklist, string, union, variant } from "valibot";
 import { branchesInfo } from "./branchesInfo";
 
-import type { InferOutput } from "valibot";
+import type { InferOutput, ObjectEntries, ObjectSchema } from "valibot";
 
 /** Object keys as a non-empty tuple for `picklist`. */
 function langKeys<T extends Record<string, unknown>>(branches: T) {
-  return Object.keys(branches) as [keyof T & string, ...Array<keyof T & string>];
+  const keys = Object.keys(branches).filter((key): key is keyof T & string => Object.hasOwn(branches, key));
+  const [first, ...rest] = keys;
+  if (first === undefined) {
+    throw new Error("Expected at least one language key");
+  }
+  return [first, ...rest];
 }
 
 export const interwikiParamsSchema = variant("community", [
@@ -33,3 +38,18 @@ export const interwikiParamsSchema = variant("community", [
 ]);
 
 export type InterwikiParams = InferOutput<typeof interwikiParamsSchema>;
+
+const cromPageSchema = object({ url: string() });
+const cromOriginalPageSchema = object({ url: string(), translations: array(cromPageSchema) });
+const cromTranslationsSchema = object({
+  translations: array(cromPageSchema),
+  translationOf: nullable(cromOriginalPageSchema),
+});
+export const cromTranslationsWithPageSchema = object({ page: cromTranslationsSchema });
+export const cromRequestSchema = <T extends ObjectEntries>(objectSchema: ObjectSchema<T, undefined>) =>
+  union([
+    object({ data: null_(), errors: array(object({ message: string(), locations: any() })) }),
+    object({ data: objectSchema }),
+  ]);
+
+export const wikidotQuickModuleSchema = object({ pages: array(object({ unix_name: string(), title: string() })) });

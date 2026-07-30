@@ -1,4 +1,5 @@
 import { ResizeObserver } from "@juggle/resize-observer";
+import { match } from "ts-pattern";
 import { safeParse } from "valibot";
 import { branchesInfo } from "./branchesInfo";
 import { createResizeIframe } from "./createResizeIframe";
@@ -9,23 +10,25 @@ import { interwikiParamsSchema } from "./validateSchema";
 import type { InterwikiParams } from "./validateSchema";
 
 addEventListener("DOMContentLoaded", () => {
-  const community = getQueryString(location.search, "community");
-  const pagename = getQueryString(location.search, "pagename");
-  const lang = getQueryString(location.search, "lang");
-  const type = getQueryString(location.search, "type");
-  const preventWikidotBaseStyle = getQueryString(location.search, "preventWikidotBaseStyle") ?? "true";
+  void (async () => {
+    const community = getQueryString(location.search, "community");
+    const pagename = getQueryString(location.search, "pagename");
+    const lang = getQueryString(location.search, "lang");
+    const type = getQueryString(location.search, "type");
+    const preventWikidotBaseStyle = getQueryString(location.search, "preventWikidotBaseStyle") ?? "true";
 
-  const result = safeParse(interwikiParamsSchema, { community, pagename, lang, type, preventWikidotBaseStyle });
+    const result = safeParse(interwikiParamsSchema, { community, pagename, lang, type, preventWikidotBaseStyle });
 
-  if (!result.success) {
-    console.error("Invalid interwiki params:", result.issues);
-    return;
-  }
+    if (!result.success) {
+      console.error("Invalid interwiki params:", result.issues);
+      return;
+    }
 
-  createInterwiki(result.output);
+    await createInterwiki(result.output);
 
-  // Expose identity for styleFrame
-  window.isInterwikiFrame = true;
+    // Expose identity for styleFrame
+    window.isInterwikiFrame = true;
+  })();
 });
 
 /**
@@ -72,15 +75,10 @@ function pullStyles() {
 /**
  * Main procedure for the interwiki. Prepare contextual data, apply CSS styling, and add links to translations.
  *
- * @param community - The community of the interwiki.
- * @param pagename - The Wikidot fullname of the current page.
- * @param currentBranchLang - The language code of the current branch of the given community.
- * @param type - The type of the interwiki, for potentially different styles of interwiki in the same page.
- * @param preventWikidotBaseStyle - Whether to prevent the addition of Wikidot's base style to the interwiki. If any
- * value other than the string "true", the style will be added with priority -1.
+ * @param params - Validated interwiki query parameters.
  */
-export function createInterwiki(params: InterwikiParams) {
-  const { community, pagename, lang: currentBranchLang, type, preventWikidotBaseStyle } = params;
+export async function createInterwiki(params: InterwikiParams) {
+  const { pagename, type, preventWikidotBaseStyle } = params;
 
   const sanitizedPagename = pagename
     .replace(/^_default:/, "")
@@ -100,11 +98,23 @@ export function createInterwiki(params: InterwikiParams) {
   //   }
   // }
 
-  // Get the list of branches for the given community
-  const branches = branchesInfo[community];
-
-  // Get the config for the current branch (lang already validated for this community)
-  const currentBranch = branches[currentBranchLang as keyof typeof branches];
+  const { branches, currentBranch, currentBranchLang } = match(params)
+    .with({ community: "scp" }, (p) => ({
+      branches: branchesInfo.scp,
+      currentBranch: branchesInfo.scp[p.lang],
+      currentBranchLang: p.lang,
+    }))
+    .with({ community: "wl" }, (p) => ({
+      branches: branchesInfo.wl,
+      currentBranch: branchesInfo.wl[p.lang],
+      currentBranchLang: p.lang,
+    }))
+    .with({ community: "br" }, (p) => ({
+      branches: branchesInfo.br,
+      currentBranch: branchesInfo.br[p.lang],
+      currentBranchLang: p.lang,
+    }))
+    .exhaustive();
 
   // Construct the function that will resize the frame after changes
   const site = document.referrer;
@@ -112,7 +122,9 @@ export function createInterwiki(params: InterwikiParams) {
   const resize = createResizeIframe(site, frameId);
 
   // Resize frame when size changes are detected
-  const observer = new ResizeObserver(resize);
+  const observer = new ResizeObserver(() => {
+    void resize();
+  });
   observer.observe(document.documentElement);
 
   // Construct the function that will be called internally and by styleFrames to request style changes
@@ -124,5 +136,5 @@ export function createInterwiki(params: InterwikiParams) {
   }
 
   pullStyles();
-  addTranslations(branches, currentBranchLang, sanitizedPagename);
+  await addTranslations(branches, currentBranchLang, sanitizedPagename);
 }

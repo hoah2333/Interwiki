@@ -1,3 +1,6 @@
+import { parse } from "valibot";
+import { wikidotQuickModuleSchema } from "../validateSchema";
+
 import type { AddLinkCallback, Branch } from "../links";
 
 /**
@@ -11,19 +14,23 @@ import type { AddLinkCallback, Branch } from "../links";
  * site will match.
  * @param addLink - A function that will be called for each found translation.
  */
-export function wikidotLookup(
+export async function wikidotLookup(
   currentBranch: Branch,
   branches: Record<string, Branch>,
   fullname: string,
   addLink: AddLinkCallback,
 ) {
-  Object.keys(branches).forEach((branchLang) => {
-    if (branches[branchLang].url === currentBranch.url) {
-      return;
-    }
-    const branch = branches[branchLang];
-    addTranslationForBranch(currentBranch, branchLang, branch, fullname, addLink);
-  });
+  await Promise.all(
+    Object.keys(branches)
+      .map((branchLang) => {
+        if (branches[branchLang].url === currentBranch.url) {
+          return null;
+        }
+        const branch = branches[branchLang];
+        return addTranslationForBranch(currentBranch, branchLang, branch, fullname, addLink);
+      })
+      .filter((promise) => promise !== null),
+  );
 }
 
 /**
@@ -36,7 +43,7 @@ export function wikidotLookup(
  * @param fullname - The Wikidot fullname of the page to lookup.
  * @param addLink - A function that will be called for each found translation.
  */
-function addTranslationForBranch(
+async function addTranslationForBranch(
   currentBranch: Branch,
   targetBranchLang: string,
   targetBranch: Branch,
@@ -61,7 +68,7 @@ function addTranslationForBranch(
   const couldHaveBeenTruncated = fullname.length >= 59 && targetFullname.length < fullname.length;
 
   // Find pages in the target branch matching this fullname
-  findPagesInSiteStartingWith(currentBranch.url, targetBranch.id, targetFullname, (fullnames) => {
+  await findPagesInSiteStartingWith(currentBranch.url, targetBranch.id, targetFullname, (fullnames) => {
     // If there is an exact match, a translation has been found
     if (
       fullnames.some((matchedFullname) => {
@@ -97,7 +104,7 @@ function addTranslationForBranch(
  * on the site will match.
  * @param callback - Will be called with the array of matching fullnames.
  */
-function findPagesInSiteStartingWith(
+async function findPagesInSiteStartingWith(
   currentBranchUrl: string,
   siteId: string,
   fullname: string,
@@ -105,25 +112,20 @@ function findPagesInSiteStartingWith(
 ) {
   const query = `&s=${siteId}&q=${fullname}`;
   const url = `${currentBranchUrl}quickmodule.php?module=PageLookupQModule${query}`;
-  const request = new XMLHttpRequest();
-  request.open("GET", url, true);
-  request.addEventListener("load", () => {
-    if (request.readyState === XMLHttpRequest.DONE) {
-      let fullnames: Array<string> = [];
-      try {
-        if (request.status === 200) {
-          const response: { pages: Array<{ unix_name: string; title: string }> } = JSON.parse(request.responseText);
-          // Format: {"pages":[{"unix_name":"scp-xxx","title":"SCP-XXX"}]}
-          fullnames = response.pages.map((page) => page.unix_name);
-        }
-      } catch (error) {
-        // Parsing failed - assume there are no matching pages
-        console.error(`Interwiki: lookup failed for ${siteId}/${fullname}`);
-        console.error(error);
-      } finally {
-        callback(fullnames);
-      }
+
+  let fullnames: Array<string> = [];
+
+  try {
+    const request = await fetch(url, { method: "GET" });
+    if (request.ok) {
+      const response = parse(wikidotQuickModuleSchema, await request.json());
+      fullnames = response.pages.map((page) => page.unix_name);
     }
-  });
-  request.send();
+  } catch (error) {
+    // Parsing failed - assume there are no matching pages
+    console.error(`Interwiki: lookup failed for ${siteId}/${fullname}`);
+    console.error(error);
+  } finally {
+    callback(fullnames);
+  }
 }
