@@ -19,10 +19,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Enable pnpm
+        run: corepack enable pnpm
       - name: Install
-        run: npm install
+        run: pnpm install
       - name: Build
-        run: npm run build
+        run: pnpm run build
       - name: Deploy preview
         uses: rossjrw/pr-preview-action@v1
         with:
