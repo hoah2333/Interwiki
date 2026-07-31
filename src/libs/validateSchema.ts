@@ -1,4 +1,18 @@
-import { any, array, literal, null_, nullable, object, optional, picklist, string, union, variant } from "valibot";
+import {
+  any,
+  array,
+  boolean,
+  literal,
+  null_,
+  nullable,
+  number,
+  object,
+  optional,
+  picklist,
+  string,
+  union,
+  variant,
+} from "valibot";
 import { branchesInfo } from "./branchesInfo";
 
 import type { InferOutput, ObjectEntries, ObjectSchema } from "valibot";
@@ -53,3 +67,18 @@ export const cromRequestSchema = <T extends ObjectEntries>(objectSchema: ObjectS
   ]);
 
 export const wikidotQuickModuleSchema = object({ pages: array(object({ unix_name: string(), title: string() })) });
+
+export const styleRequestInputSchema = object({
+  type: string(),
+  priority: number(),
+  override: optional(boolean(), false),
+  theme: optional(string()),
+  css: optional(string()),
+});
+export const styleRequestSchema = union([
+  object({ kind: literal("ready") }),
+  object({ kind: literal("style"), style: styleRequestInputSchema }),
+]);
+
+export type StyleRequestInput = InferOutput<typeof styleRequestInputSchema>;
+export type StyleRequest = InferOutput<typeof styleRequestSchema>;

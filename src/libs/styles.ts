@@ -1,41 +1,20 @@
-import { getQueryString } from "./interwiki";
+import type { StyleRequestInput } from "./validateSchema";
 
-/**
- * Constructs the handler for requesting style changes to the interwikiFrame.
- *
- * @param siteUrl - The base URL of the interwiki's configured site.
- * @param type - The type of interwiki, for potentially different styles of interwiki in the same page.
- */
-export function createRequestStyleChange(siteUrl: string, type: string) {
-  /**
-   * Handles a style request from a styleFrame.
-   *
-   * @param request - A URL query originating from a styleFrame, requesting a style change for the interwikiFrame.
-   */
-  return function requestStyleChange(request: string) {
-    const styleType = getQueryString(request, "type") ?? "default";
-    const priorityRaw = getQueryString(request, "priority");
-    const priority = Number(priorityRaw);
-    const overrideRaw = getQueryString(request, "override") ?? "0";
-    const override = Boolean(Number(overrideRaw));
-    if (isNaN(priority)) {
-      console.error(`Interwiki: rejected style with priority ${priorityRaw}`);
-      return;
-    }
-    if (styleType !== type) {
-      return;
-    }
-
-    const theme = getQueryString(request, "theme");
-    if (theme !== undefined && theme !== "") {
-      addExternalStyle(priority, urlFromTheme(siteUrl, theme), override);
-    }
-
-    const css = getQueryString(request, "css");
-    if (css !== undefined && css !== "") {
-      addInternalStyle(priority, css, override);
-    }
-  };
+export function handleStyleChange(siteUrl: string, type: string, style: StyleRequestInput) {
+  const { type: styleType, priority, override, theme, css } = style;
+  if (styleType !== type) {
+    return;
+  }
+  if (isNaN(priority)) {
+    console.error(`Interwiki: rejected style with an invalid priority`);
+    return;
+  }
+  if (theme !== undefined && theme !== "") {
+    addExternalStyle(priority, urlFromTheme(siteUrl, theme), override);
+  }
+  if (css !== undefined && css !== "") {
+    addInternalStyle(priority, css, override);
+  }
 }
 
 /**
