@@ -65,7 +65,7 @@ export const branchesInfo = {
       id: "4548260",
       category: "",
     },
-    th: { name: "ภาษาไทย", head: "ภาษาอื่นๆ", url: "http://backrooms-th.wikidot.com/", id: "4911723", category: "" },
+    th: { name: "ภาษาไทย", head: "ภาษาอื่นๆ", url: "http://th-backrooms-wiki.wikidot.com/", id: "4911723", category: "" },
     vn: { name: "Tiếng Việt", head: "Ngôn ngữ", url: "http://backrooms-vn.wikidot.com/", id: "4748367", category: "" },
   },
   scp: {
