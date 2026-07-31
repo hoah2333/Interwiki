@@ -1,4 +1,3 @@
-import { ResizeObserver } from "@juggle/resize-observer";
 import { match } from "ts-pattern";
 import { safeParse } from "valibot";
 import { branchesInfo } from "./branchesInfo";
@@ -9,27 +8,27 @@ import { interwikiParamsSchema } from "./validateSchema";
 
 import type { InterwikiParams } from "./validateSchema";
 
-addEventListener("DOMContentLoaded", () => {
-  void (async () => {
-    const community = getQueryString(location.search, "community");
-    const pagename = getQueryString(location.search, "pagename");
-    const lang = getQueryString(location.search, "lang");
-    const type = getQueryString(location.search, "type");
-    const preventWikidotBaseStyle = getQueryString(location.search, "preventWikidotBaseStyle") ?? "true";
+await initInterwiki();
 
-    const result = safeParse(interwikiParamsSchema, { community, pagename, lang, type, preventWikidotBaseStyle });
+async function initInterwiki() {
+  const community = getQueryString(location.search, "community");
+  const pagename = getQueryString(location.search, "pagename");
+  const lang = getQueryString(location.search, "lang");
+  const type = getQueryString(location.search, "type");
+  const preventWikidotBaseStyle = getQueryString(location.search, "preventWikidotBaseStyle") ?? "true";
 
-    if (!result.success) {
-      console.error("Invalid interwiki params:", result.issues);
-      return;
-    }
+  const result = safeParse(interwikiParamsSchema, { community, pagename, lang, type, preventWikidotBaseStyle });
 
-    await createInterwiki(result.output);
+  if (!result.success) {
+    console.error("Invalid interwiki params:", result.issues);
+    return;
+  }
 
-    // Expose identity for styleFrame
-    window.isInterwikiFrame = true;
-  })();
-});
+  await createInterwiki(result.output);
+
+  // Expose identity for styleFrame
+  window.isInterwikiFrame = true;
+}
 
 /**
  * Retrieves the value of the query parameter in the URL with the given key, if provided, otherwise returns the empty
@@ -72,15 +71,8 @@ function pullStyles() {
   });
 }
 
-/**
- * Main procedure for the interwiki. Prepare contextual data, apply CSS styling, and add links to translations.
- *
- * @param params - Validated interwiki query parameters.
- */
-export async function createInterwiki(params: InterwikiParams) {
-  const { pagename, type, preventWikidotBaseStyle } = params;
-
-  const sanitizedPagename = pagename
+function sanitizePagename(pagename: string) {
+  const sanitized = pagename
     .replace(/^_default:/, "")
     .replaceAll(/[^\w\-:]+/g, "-")
     .toLowerCase()
@@ -90,13 +82,22 @@ export async function createInterwiki(params: InterwikiParams) {
     .replaceAll(/^-+|-+$/g, "");
 
   // Reverse replace the desolation canon URL
-  // const desolations = ["desolation-backrooms-guide"];
+  const desolationsExpection = ["desolation-backrooms-guide"];
+  if (desolationsExpection.includes(sanitized)) {
+    return sanitized;
+  }
+  return sanitized.replace(/^desolation-/, "desolation:");
+}
 
-  // for (var i = 0; i < desolations.length; i++) {
-  //   if (pagename != desolations[i]) {
-  //     pagename = pagename.replace(/^desolation-/, "desolation:");
-  //   }
-  // }
+/**
+ * Main procedure for the interwiki. Prepare contextual data, apply CSS styling, and add links to translations.
+ *
+ * @param params - Validated interwiki query parameters.
+ */
+export async function createInterwiki(params: InterwikiParams) {
+  const { pagename, type, preventWikidotBaseStyle } = params;
+
+  const sanitizedPagename = sanitizePagename(pagename);
 
   const { branches, currentBranch, currentBranchLang } = match(params)
     .with({ community: "scp" }, (p) => ({
