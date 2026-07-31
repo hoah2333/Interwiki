@@ -53,10 +53,25 @@ export const interwikiParamsSchema = variant("community", [
 
 export type InterwikiParams = InferOutput<typeof interwikiParamsSchema>;
 
-const cromPageSchema = object({ url: string() });
-const cromOriginalPageSchema = object({ url: string(), translations: array(cromPageSchema) });
-const cromTranslationsSchema = object({
+const cromPageSchema = object({
+  /** The URL of this page. */
+  url: string(),
+});
+const cromOriginalPageSchema = object({
+  /** The URL of this page. */
+  url: string(),
+  /** URLs of translations of this page. */
   translations: array(cromPageSchema),
+});
+/**
+ * Crom's response to a translations request.
+ *
+ * Generally, either `translations` will be an empty array, or `translationOf` will be null.
+ */
+const cromTranslationsSchema = object({
+  /** URLs for translations of this page. */
+  translations: array(cromPageSchema),
+  /** The page that the current page is a translation of. */
   translationOf: nullable(cromOriginalPageSchema),
 });
 export const cromTranslationsWithPageSchema = object({ page: cromTranslationsSchema });
@@ -65,6 +80,7 @@ export const cromRequestSchema = <T extends ObjectEntries>(objectSchema: ObjectS
     object({ data: null_(), errors: array(object({ message: string(), locations: any() })) }),
     object({ data: objectSchema }),
   ]);
+export type CromTranslations = InferOutput<typeof cromTranslationsSchema>;
 
 export const wikidotQuickModuleSchema = object({ pages: array(object({ unix_name: string(), title: string() })) });
 

@@ -22,22 +22,20 @@ export function handleStyleChange(siteUrl: string, type: string, style: StyleReq
  *
  * @param priority - The priority of the CSS, which determines the sort order.
  * @param css - Raw CSS to add to the style.
- * @param override - Whether to remove all previous styling or not.
+ * @param override - Whether to remove previous styling of same priority or not.
  */
 function addInternalStyle(priority: number, css: string, override: boolean) {
   // Check that the incoming CSS doesn't duplicate an existing style
-  const styleElements = Array.from(document.head.querySelectorAll("style.custom-style")).filter(
-    (element) => element instanceof HTMLStyleElement,
-  );
-  if (styleElements.some(duplicatesStyle(priority, css))) {
+  const styleElements = Array.from(document.head.querySelectorAll<HTMLStyleElement>("style.custom-style"));
+  if (styleElements.some((element) => isDuplicateStyle(element, priority, css))) {
     return;
   }
 
   if (override) {
-    const overrideElement = styleElements.find(duplicatesPriority(priority));
+    const overrideElement = styleElements.find((element) => isDuplicatePriority(element, priority));
     // Override the style of a pre-existing styling element
     if (overrideElement) {
-      console.log(`Interwiki: style at priority ${priority} is being overrided.`);
+      console.log(`Interwiki: style at priority ${priority} is being overridden.`);
       overrideElement.textContent = css;
       return;
     }
@@ -56,22 +54,25 @@ function addInternalStyle(priority: number, css: string, override: boolean) {
  *
  * @param priority - The priority of the CSS, which determines the sort order.
  * @param url - The URL of the CSS stylesheet.
- * @param override - Whether to remove all previous styling or not.
+ * @param override - Whether to remove previous styling of same priority or not.
  */
 export function addExternalStyle(priority: number, url: string, override: boolean) {
+  // If the URL is empty, do nothing
+  if (url === "") {
+    return;
+  }
+
   // Check that the incoming link doesn't duplicate an existing style
-  const linkElements = Array.from(document.head.querySelectorAll("link.custom-style")).filter(
-    (element: Element) => element instanceof HTMLLinkElement,
-  );
-  if (linkElements.some(duplicatesStyle(priority, url))) {
+  const linkElements = Array.from(document.head.querySelectorAll<HTMLLinkElement>("link.custom-style"));
+  if (linkElements.some((element) => isDuplicateStyle(element, priority, url))) {
     return;
   }
 
   if (override) {
-    const overrideElement = linkElements.find(duplicatesPriority(priority));
+    const overrideElement = linkElements.find((element) => isDuplicatePriority(element, priority));
     // Override the link of a pre-existing link element
     if (overrideElement) {
-      console.log(`Interwiki: stylesheet ${overrideElement.href} is overrided by ${url} at priority ${priority}.`);
+      console.log(`Interwiki: stylesheet ${overrideElement.href} is overridden by ${url} at priority ${priority}.`);
       overrideElement.href = url;
       return;
     }
@@ -97,13 +98,14 @@ export function addExternalStyle(priority: number, url: string, override: boolea
 function insertStyle(newPriority: number, newStylingElement: HTMLLinkElement | HTMLStyleElement) {
   newStylingElement.classList.add("custom-style");
   newStylingElement.dataset.priority = String(newPriority);
-  const stylingElements = Array.from(document.head.querySelectorAll("link.custom-style, style.custom-style")).filter(
-    (element: Element) => element instanceof HTMLLinkElement || element instanceof HTMLStyleElement,
+  const stylingElements = Array.from(
+    document.head.querySelectorAll<HTMLLinkElement | HTMLStyleElement>("link.custom-style, style.custom-style"),
   );
 
   // Attempt to insert the element between other existing elements
   const newTagName = newStylingElement.tagName;
-  const wasInserted = stylingElements.some((stylingElement) => {
+
+  const anchor = stylingElements.find((stylingElement) => {
     const priority = Number(stylingElement.dataset.priority);
     const { tagName } = stylingElement;
 
@@ -135,11 +137,12 @@ function insertStyle(newPriority: number, newStylingElement: HTMLLinkElement | H
 
     // Otherwise, if the new priority is less than the current priority (or after falling back from the equality case),
     // insert the new element before the one with higher priority
-    document.head.insertBefore(newStylingElement, stylingElement);
     return true;
   });
 
-  if (!wasInserted) {
+  if (anchor) {
+    document.head.insertBefore(newStylingElement, anchor);
+  } else {
     // The element would not have been inserted if it is the first, or if its priority is greater than all existing
     // priorities
     document.head.append(newStylingElement);
@@ -147,40 +150,27 @@ function insertStyle(newPriority: number, newStylingElement: HTMLLinkElement | H
 }
 
 /**
- * Constructs and returns a function that checks if a given HTML element (assumed to be either a link or a style
- * element) is a match for an element that would have been created for the given priority and value.
- *
- * @param {Number} priority
- * @param {String} value
+ * Checks if a given HTML element (assumed to be either a link or a style element) is a match for an element that would
+ * have been created for the given priority and value.
  */
-function duplicatesStyle(priority: number, value: string) {
-  const isDuplicate = (styleElement: HTMLLinkElement | HTMLStyleElement): boolean => {
-    if (Number(styleElement.dataset.priority) !== priority) {
-      return false;
-    }
-    if (styleElement.tagName === "LINK") {
-      return styleElement.getAttribute("href") === value;
-    }
-    if (styleElement.tagName === "STYLE") {
-      return styleElement.textContent === value;
-    }
+function isDuplicateStyle(styleElement: HTMLLinkElement | HTMLStyleElement, priority: number, value: string): boolean {
+  if (Number(styleElement.dataset.priority) !== priority) {
     return false;
-  };
-
-  return isDuplicate;
+  }
+  if (styleElement.tagName === "LINK") {
+    return styleElement.getAttribute("href") === value;
+  }
+  if (styleElement.tagName === "STYLE") {
+    return styleElement.textContent === value;
+  }
+  return false;
 }
 
 /**
- * Constructs and returns a function that checks if a given HTML element (assumed to be either a link or a style
- * element) has the given priority.
- *
- * @param priority
+ * Checks if a given HTML element (assumed to be either a link or a style element) has the given priority.
  */
-function duplicatesPriority(priority: number) {
-  const isDuplicate = (styleElement: HTMLLinkElement | HTMLStyleElement): boolean =>
-    Number(styleElement.dataset.priority) === priority;
-
-  return isDuplicate;
+function isDuplicatePriority(styleElement: HTMLLinkElement | HTMLStyleElement, priority: number): boolean {
+  return Number(styleElement.dataset.priority) === priority;
 }
 
 /**
@@ -198,7 +188,7 @@ function duplicatesPriority(priority: number) {
  */
 function urlFromTheme(siteUrl: string, theme: string) {
   // If the theme is already a full URL, return it
-  if (theme.startsWith("http") || theme.startsWith("//")) {
+  if (/^https?:\/\//.test(theme) || theme.startsWith("//")) {
     return theme;
   }
 

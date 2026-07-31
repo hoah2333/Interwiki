@@ -2,6 +2,7 @@ import { parse } from "valibot";
 import { cromRequestSchema, cromTranslationsWithPageSchema } from "../validateSchema";
 
 import type { AddLinkCallback, Branch } from "../links";
+import type { CromTranslations } from "../validateSchema";
 
 /**
  * A helper function to create a GraphQL like query string from a template string and substitutions.
@@ -34,30 +35,6 @@ const query = gql`
 // Generally used for proxying
 const apiList = ["https://apiv1.crom.avn.sh/graphql", "https://zh.xjo.ch/crom/graphql"];
 
-interface CromPage {
-  /** The URL of this page. */
-  url: string;
-}
-
-interface CromOriginalPage {
-  /** The URL of this page. */
-  url: string;
-  /** URLs of translations of this page. */
-  translations: Array<CromPage>;
-}
-
-/**
- * Crom's response to a translations request.
- *
- * Generally, either `translations` will be an empty array, or `translationOf` will be null.
- */
-interface CromTranslations {
-  /** URLs for translations of this page. */
-  translations: Array<CromPage>;
-  /** The page that the current page is a translation of. */
-  translationOf: CromOriginalPage | null;
-}
-
 /**
  * Searches for pages whose fullname matches the given string in the given set of Wikidot sites using Crom query.
  *
@@ -73,15 +50,16 @@ export async function cromLookup(
   fullname: string,
   addLink: AddLinkCallback,
 ) {
-  await executeQuery(normaliseUrl(currentBranch.url + fullname), 0, (response: CromTranslations) => {
-    parseTranslations(response, currentBranch, branches, addLink);
-  });
+  const page = await executeQuery(normaliseUrl(currentBranch.url + fullname), 0);
+  if (page === null) {
+    return;
+  }
+
+  parseTranslations(page, currentBranch, branches, addLink);
 }
 
 /**
  * Normalises a branch URL to one accepted by Crom.
- *
- * @param url
  */
 function normaliseUrl(url: string) {
   if (!url.includes(".wikidot.com")) {
@@ -105,20 +83,15 @@ function parseTranslations(
   branches: Record<string, Branch>,
   addLink: AddLinkCallback,
 ) {
-  function url(page: CromPage) {
-    return page.url;
-  }
-  let original = null;
-  let translations: Array<string> = [];
-
-  // Extract translations of this page
-  translations = [...translations, ...response.translations.map(url)];
-  // Extract translations of this page's translation root
-  if (response.translationOf) {
-    original = response.translationOf.url;
-    translations.push(original);
-    translations = [...translations, ...response.translationOf.translations.map(url)];
-  }
+  const original = response.translationOf?.url ?? null;
+  const translations: Array<string> = [
+    // Extract translations of this page
+    ...response.translations.map((page) => page.url),
+    // Extract translations of this page's translation root
+    ...(response.translationOf === null
+      ? []
+      : [response.translationOf.url, ...response.translationOf.translations.map((page) => page.url)]),
+  ];
 
   translations.forEach((translation) => {
     // Do not add this translation if it is from the current branch
@@ -130,7 +103,7 @@ function parseTranslations(
     const targetBranchLang = Object.keys(branches).find((branchLang) =>
       translation.startsWith(normaliseUrl(branches[branchLang].url)),
     );
-    if (targetBranchLang === undefined || targetBranchLang === "") {
+    if (targetBranchLang === undefined) {
       // Crom may support unofficial/unconfigured branches
       console.warn(`Interwiki: unknown branch ${translation}`);
       return;
@@ -147,7 +120,7 @@ function parseTranslations(
  * @param endpointIndex - Retry index for Crom endpoints.
  * @param callback - Will be called with the response from Crom.
  */
-async function executeQuery(url: string, endpointIndex: number, callback: (response: CromTranslations) => void) {
+async function executeQuery(url: string, endpointIndex: number) {
   try {
     const request = await fetch(apiList[endpointIndex], {
       method: "POST",
@@ -161,16 +134,15 @@ async function executeQuery(url: string, endpointIndex: number, callback: (respo
           response.errors.length > 0 ? response.errors.map((error) => error.message).join(", ") : "No specific error",
         );
       }
-      callback(response.data.page);
-    } else {
-      throw new Error(String(request.status));
+      return response.data.page;
     }
+    throw new Error(String(request.status));
   } catch (error) {
-    if (endpointIndex++ < apiList.length) {
-      await executeQuery(url, endpointIndex, callback);
-    } else {
-      console.error(`Interwiki: lookup failed for ${url}`);
-      console.error(error);
+    if (endpointIndex + 1 < apiList.length) {
+      return executeQuery(url, endpointIndex + 1);
     }
+    console.error(`Interwiki: lookup failed for ${url}`);
+    console.error(error);
+    return null;
   }
 }

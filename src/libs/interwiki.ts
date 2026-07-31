@@ -78,7 +78,7 @@ export async function createInterwiki(params: InterwikiParams) {
   // Construct the function that will resize the frame after changes
   const site = document.referrer;
   const frameId = location.href.replace(/^.*\//, "/");
-  const resize = createResizeIframe(site, frameId);
+  const { resize, show } = createResizeIframe(site, frameId);
 
   // Resize frame when size changes are detected
   const observer = new ResizeObserver(() => {
@@ -98,5 +98,5 @@ export async function createInterwiki(params: InterwikiParams) {
   }
 
   broadcast({ kind: "ready" });
-  await addTranslations(branches, currentBranchLang, sanitizedPagename);
+  await addTranslations(branches, currentBranchLang, sanitizedPagename, show);
 }

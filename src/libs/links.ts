@@ -1,4 +1,3 @@
-import { flags } from "./createResizeIframe";
 import { cromLookup } from "./lookup/crom";
 
 // Configure which lookup method is currently active
@@ -27,26 +26,27 @@ export interface Branch {
 }
 
 /**
- * Requests translation data for the current page from all configured branches. Also sets the hover information in the
- * refresh link to the current time.
+ * Requests translation data for the current page from all configured branches.
  *
  * @param branches - The branches configuration for the current community.
  * @param currentBranchLang - The language code of the current branch, as defined in the community's branches config.
  * @param pagename - The fullname of the page in the current branch to find translations for.
+ * @param showInterwiki - A function that shows the interwiki when called.
  */
-export async function addTranslations(branches: Record<string, Branch>, currentBranchLang: string, pagename: string) {
+export async function addTranslations(
+  branches: Record<string, Branch>,
+  currentBranchLang: string,
+  pagename: string,
+  showInterwiki: () => void,
+) {
   // Get the config for the current branch, if configured
   const currentBranch = branches[currentBranchLang];
 
   // Hide the side block by default (will be unhidden if there is at least one translation)
-  const sideBlock = Array.from(document.querySelectorAll(".side-block")).find(
-    (element) => element instanceof HTMLDivElement,
-  );
+  const sideBlock = document.querySelector<HTMLDivElement>("div.side-block");
 
   // Construct the header
-  const header = Array.from(document.querySelectorAll(".heading p")).find(
-    (element) => element instanceof HTMLParagraphElement,
-  );
+  const header = document.querySelector<HTMLParagraphElement>("div.heading p");
 
   if (!sideBlock || !header) {
     return;
@@ -62,7 +62,7 @@ export async function addTranslations(branches: Record<string, Branch>, currentB
     (pageUrl: string, branchName: string, branchLang: string, isOriginal: boolean) => {
       addTranslationLink(pageUrl, branchName, branchLang, isOriginal);
       // Indicate that data has been received
-      flags.showInterwiki = true;
+      showInterwiki();
     },
   );
 }
@@ -76,15 +76,11 @@ export async function addTranslations(branches: Record<string, Branch>, currentB
  * @param isOriginal - Whether this link is for the original article rather than a translation.
  */
 function addTranslationLink(pageUrl: string, branchName: string, branchLang: string, isOriginal: boolean) {
-  const sideBlock = Array.from(document.querySelectorAll(".side-block")).find(
-    (element) => element instanceof HTMLDivElement,
-  );
+  const sideBlock = document.querySelector<HTMLDivElement>(".side-block");
   if (!sideBlock) {
     return;
   }
-  const menuItems = Array.from(sideBlock.querySelectorAll(".menu-item")).filter(
-    (element) => element instanceof HTMLDivElement,
-  );
+  const menuItems = Array.from(sideBlock.querySelectorAll<HTMLDivElement>("div.menu-item"));
 
   // There is a translation, so unhide the side block if it is hidden
   sideBlock.style.display = "";
@@ -100,15 +96,15 @@ function addTranslationLink(pageUrl: string, branchName: string, branchLang: str
 
   // Create the bullet point image
   const bullet = document.createElement("img");
-  bullet.setAttribute("src", "//sigma9.scpwikicn.com/cn/img/default.png");
-  bullet.setAttribute("alt", "default.png");
+  bullet.src = "//sigma9.scpwikicn.com/cn/img/default.png";
+  bullet.alt = "default.png";
   bullet.classList.add("image");
   newMenuItem.append(bullet);
 
   // Create the actual link
   const link = document.createElement("a");
-  link.setAttribute("href", pageUrl);
-  link.setAttribute("target", "_parent");
+  link.href = pageUrl;
+  link.target = "_parent";
   link.textContent = branchName;
   newMenuItem.append(link);
 
@@ -116,11 +112,8 @@ function addTranslationLink(pageUrl: string, branchName: string, branchLang: str
   sideBlock.append(newMenuItem);
   // Then find the first existing menu item whose lang code is alphabetically greater than the new item, and move the
   // new item to just before it
-  menuItems.some((menuItem) => {
-    if ((menuItem.getAttribute("name") ?? "") > branchLang) {
-      menuItem.before(newMenuItem);
-      return true;
-    }
-    return false;
-  });
+  const anchor = menuItems.find((menuItem) => (menuItem.getAttribute("name") ?? "") > branchLang);
+  if (anchor) {
+    anchor.before(newMenuItem);
+  }
 }

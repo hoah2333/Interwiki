@@ -22,19 +22,13 @@ export async function wikidotLookup(
 ) {
   await Promise.all(
     Object.keys(branches)
-      .map((branchLang) => {
-        if (branches[branchLang].url === currentBranch.url) {
-          return null;
-        }
-        const branch = branches[branchLang];
-        return addTranslationForBranch(currentBranch, branchLang, branch, fullname, addLink);
-      })
-      .filter((promise) => promise !== null),
+      .filter((branchLang) => branches[branchLang].url !== currentBranch.url)
+      .map((branchLang) => addTranslationForBranch(currentBranch, branchLang, branches[branchLang], fullname, addLink)),
   );
 }
 
 /**
- * For the given target branch, find a page that is a translation of the paat fullname in the current branch. If one
+ * For the given target branch, find a page that is a translation of the page fullname in the current branch. If one
  * exists, create a menu item for it.
  *
  * @param currentBranch - Configuration for the current branch.
@@ -54,43 +48,39 @@ async function addTranslationForBranch(
   // E.g.:
   // WL CN "wanderers:page" -> WL EN "page"
   // WL EN "page" -> WL CN "wanderers:page"
-  let targetFullname = fullname.replace(new RegExp(`^${currentBranch.category}`), targetBranch.category);
+  const replacedFullname = fullname.startsWith(currentBranch.category)
+    ? targetBranch.category + fullname.slice(currentBranch.category.length)
+    : fullname;
 
-  // A fullname can be at most 60 characters long. If the target fullname
-  // is any longer, truncate it
-  targetFullname = targetFullname.slice(0, 60).replace(/-$/, "");
+  // A fullname can be at most 60 characters long. If the target fullname is any longer, truncate it
+  const targetFullname = replacedFullname.slice(0, 60).replace(/-$/, "");
 
-  // If the original fullname was 59 characters long (because the limit is
-  // 60, minus one if it would have ended with a hyphen), it could have
-  // been truncated. If the target fullname is shorter than the original
-  // fullname (due to stripping the category), the last bit of the fullname
-  // is not recoverable
+  // If the original fullname was 59 characters long (because the limit is 60, minus one if it would have ended with a
+  // hyphen), it could have been truncated. If the target fullname is shorter than the original fullname (due to
+  // stripping the category), the last bit of the fullname is not recoverable
   const couldHaveBeenTruncated = fullname.length >= 59 && targetFullname.length < fullname.length;
 
   // Find pages in the target branch matching this fullname
-  await findPagesInSiteStartingWith(currentBranch.url, targetBranch.id, targetFullname, (fullnames) => {
-    // If there is an exact match, a translation has been found
-    if (
-      fullnames.some((matchedFullname) => {
-        // If the end of the fullname is possibly missing, check only
-        // that the matched fullname starts with the target.
-        // This is unlikely to produce a false positive because the
-        // fullnames involved are very long (~60 chars)
-        if (couldHaveBeenTruncated) {
-          return matchedFullname.startsWith(targetFullname);
-        }
-        // Otherwise, check for exact matches only
-        return matchedFullname === targetFullname;
-      })
-    ) {
-      addLink(
-        targetBranch.url + targetFullname,
-        targetBranch.name,
-        targetBranchLang,
-        false, // Cannot distinguish original translation
-      );
-    }
-  });
+  const fullnames = await findPagesInSiteStartingWith(currentBranch.url, targetBranch.id, targetFullname);
+  // If there is an exact match, a translation has been found
+  if (
+    fullnames.some((matchedFullname) => {
+      // If the end of the fullname is possibly missing, check only that the matched fullname starts with the target.
+      // This is unlikely to produce a false positive because the fullnames involved are very long (~60 chars)
+      if (couldHaveBeenTruncated) {
+        return matchedFullname.startsWith(targetFullname);
+      }
+      // Otherwise, check for exact matches only
+      return matchedFullname === targetFullname;
+    })
+  ) {
+    addLink(
+      targetBranch.url + targetFullname,
+      targetBranch.name,
+      targetBranchLang,
+      false, // Cannot distinguish original translation
+    );
+  }
 }
 
 /**
@@ -102,30 +92,24 @@ async function addTranslationForBranch(
  * @param siteId - The numeric Wikidot site ID of the site to search.
  * @param fullname - The substring to compare fullnames against. If an underscore "_" is provided, all pages
  * on the site will match.
- * @param callback - Will be called with the array of matching fullnames.
  */
-async function findPagesInSiteStartingWith(
-  currentBranchUrl: string,
-  siteId: string,
-  fullname: string,
-  callback: (page: Array<string>) => void,
-) {
-  const query = `&s=${siteId}&q=${fullname}`;
-  const url = `${currentBranchUrl}quickmodule.php?module=PageLookupQModule${query}`;
-
-  let fullnames: Array<string> = [];
+async function findPagesInSiteStartingWith(currentBranchUrl: string, siteId: string, fullname: string) {
+  const url = new URL(`${currentBranchUrl}quickmodule.php`);
+  url.searchParams.set("module", "PageLookupQModule");
+  url.searchParams.set("s", siteId);
+  url.searchParams.set("q", fullname);
 
   try {
-    const request = await fetch(url, { method: "GET" });
+    const request = await fetch(url);
     if (request.ok) {
       const response = parse(wikidotQuickModuleSchema, await request.json());
-      fullnames = response.pages.map((page) => page.unix_name);
+      return response.pages.map((page) => page.unix_name);
     }
+    throw new Error(`Request failed for ${url}`);
   } catch (error) {
     // Parsing failed - assume there are no matching pages
     console.error(`Interwiki: lookup failed for ${siteId}/${fullname}`);
     console.error(error);
-  } finally {
-    callback(fullnames);
+    return [];
   }
 }
