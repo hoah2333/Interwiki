@@ -9,7 +9,6 @@
     "lint:fix": "oxfmt . && oxlint --fix"
   },
   "dependencies": {
-    "@juggle/resize-observer": "^3.4.0",
     "perfect-debounce": "^2.1.0",
     "ts-pattern": "^5.9.0",
     "valibot": "^1.4.2"
