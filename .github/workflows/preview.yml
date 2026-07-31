@@ -8,9 +8,10 @@ on:
       - closed
     paths:
       - css/**
-      - html/**
-      - js/**
-      - build.js
+      - src/**
+      - vite.config.ts
+      - package.json
+      - pnpm-lock.yaml
       - .github/workflows/preview.yml
 concurrency: preview-${{ github.ref }}
 jobs:

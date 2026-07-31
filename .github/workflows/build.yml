@@ -1,7 +1,7 @@
 name: build
 on:
   push:
-    branches: [main]
+    branches: [vite-refactor]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,6 +17,6 @@ jobs:
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages
+          branch: gh-pages-vite
           folder: dist
           clean-exclude: pr-preview/
