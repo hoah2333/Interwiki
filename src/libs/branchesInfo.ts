@@ -19,8 +19,8 @@ export const branchesInfo = {
     de: {
       name: "Deutsch",
       head: "In anderen Sprachen",
-      url: "http://de-backrooms-wiki.wikidot.com/",
-      id: "4956684",
+      url: "http://dach-backrooms-wiki.wikidot.com/",
+      id: "5054816",
       category: "",
     },
     id: {
@@ -68,6 +68,7 @@ export const branchesInfo = {
     th: { name: "ภาษาไทย", head: "ภาษาอื่นๆ", url: "http://th-backrooms-wiki.wikidot.com/", id: "4911723", category: "" },
     vn: { name: "Tiếng Việt", head: "Ngôn ngữ", url: "http://backrooms-vn.wikidot.com/", id: "4748367", category: "" },
   },
+
   scp: {
     cn: { name: "中文", head: "其他语言", url: "https://scp-wiki-cn.wikidot.com/", id: "530812", category: "" },
     cs: { name: "Česky", head: "V jiných jazycích", url: "https://scp-cs.wikidot.com/", id: "2060442", category: "" },
@@ -135,6 +136,7 @@ export const branchesInfo = {
     },
     vn: { name: "Tiếng Việt", head: "Ngôn ngữ", url: "https://scp-vn.wikidot.com/", id: "836589", category: "" },
   },
+  
   wl: {
     cn: {
       name: "中文",
