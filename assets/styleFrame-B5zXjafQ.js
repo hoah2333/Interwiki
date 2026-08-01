@@ -1,0 +1,2 @@
+import{c as e,d as t,n,r,t as i}from"./styleChannel-D8S7VYXT.js";var a=t(e,r(location.search));a.success?(i({kind:`style`,style:a.output}),n(e=>{e.kind===`ready`&&i({kind:`style`,style:a.output})})):console.error(`Interwiki: rejected style change. Issue:`,a.issues);
+//# sourceMappingURL=styleFrame-B5zXjafQ.js.map
